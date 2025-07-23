@@ -5,7 +5,7 @@ import GameContainer from './GameContainer';
 import TextDisplay from './TextDisplay';
 import ChoiceSelection from './ChoiceSelection';
 import SceneRenderer from './SceneRenderer';
-import CharacterSilhouette from './CharacterSilhouette';
+import CharacterSilhouette from '../ui/CharacterSilhouette';
 import soundEffects from '../../services/audio/soundEffects';
 
 // Main game screen component
