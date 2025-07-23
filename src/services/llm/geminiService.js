@@ -437,66 +437,13 @@ Do not break character or acknowledge that you are an AI. Respond only as the ga
    * Generate visual description for a scene
    * @param {string} sceneDescription - Description of the current scene
    * @returns {Promise<string>} - Detailed visual description for rendering
+   * 
+   * NOTE: Temporarily disabled as image generation/usage is incomplete
    */
   async generateVisualDescription(sceneDescription) {
-    const prompt = `다음 장면에 대한 시각적 묘사를 생성해주세요. 이 묘사는 HTML Canvas에서 렌더링하기 위한 것입니다:
-    
-장면: ${sceneDescription}
-
-다음 형식으로 응답해주세요:
-- 배경: (배경의 상세한 묘사)
-- 조명: (조명 효과 묘사)
-- 캐릭터 위치: (등장인물들의 위치)
-- 특수 효과: (필요한 특수 효과)
-- 색상 팔레트: (주요 색상 5-7개)`;
-    
-    let lastError = null;
-    
-    // Try with current API key
-    try {
-      const model = this.genAI.getGenerativeModel({ model: this.model });
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const visualDescription = response.text();
-      
-      return visualDescription;
-    } catch (error) {
-      console.error(`Error generating visual description with ${this.currentApiKey.toUpperCase()} API key:`, error);
-      lastError = error;
-      
-      // Try with SUB key if we're currently using MAIN
-      if (this.switchToSubKey()) {
-        try {
-          const model = this.genAI.getGenerativeModel({ model: this.model });
-          const result = await model.generateContent(prompt);
-          const response = result.response;
-          const visualDescription = response.text();
-          
-          return visualDescription;
-        } catch (subError) {
-          console.error('Error generating visual description with SUB API key:', subError);
-          lastError = subError;
-          
-          // Try with THIRD key if SUB key failed
-          if (this.switchToThirdKey()) {
-            try {
-              const model = this.genAI.getGenerativeModel({ model: this.model });
-              const result = await model.generateContent(prompt);
-              const response = result.response;
-              const visualDescription = response.text();
-              
-              return visualDescription;
-            } catch (thirdError) {
-              console.error('Error generating visual description with THIRD API key:', thirdError);
-              throw thirdError; // No more fallbacks available
-            }
-          }
-        }
-      }
-      
-      // If we get here, all fallbacks failed or weren't available
-      throw lastError;
-    }
+    // Stub implementation - functionality is disabled
+    console.log('Visual description generation skipped - image generation/usage is disabled');
+    return "Visual description generation is disabled";
   }
   
   /**
@@ -504,85 +451,16 @@ Do not break character or acknowledge that you are an AI. Respond only as the ga
    * @param {string} sceneDescription - Description of the current scene
    * @param {string} mood - The mood of the scene
    * @returns {Promise<object>} - Audio parameters for Web Audio API
+   * 
+   * NOTE: Temporarily disabled as sound generation/usage is incomplete
    */
   async generateAudioDescription(sceneDescription, mood) {
-    const prompt = `다음 장면에 대한 오디오 묘사를 생성해주세요. 이 묘사는 Web Audio API에서 사용하기 위한 것입니다:
-    
-장면: ${sceneDescription}
-분위기: ${mood || '긴장감'}
-
-다음 형식으로 응답해주세요:
-- 배경음악: (배경음악의 특성, 템포, 악기 등)
-- 효과음: (필요한 효과음 목록)
-- 음량: (배경음악과 효과음의 상대적 음량, 1-10)
-- 주파수: (주요 주파수 범위)
-- 특수 효과: (필요한 오디오 효과)`;
-    
-    let lastError = null;
-    
-    // Try with current API key
-    try {
-      const model = this.genAI.getGenerativeModel({ model: this.model });
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const audioDescriptionText = response.text();
-      
-      // Parse the audio description into parameters
-      const audioParams = this.parseAudioDescription(audioDescriptionText);
-      
-      return {
-        rawDescription: audioDescriptionText,
-        params: audioParams,
-      };
-    } catch (error) {
-      console.error(`Error generating audio description with ${this.currentApiKey.toUpperCase()} API key:`, error);
-      lastError = error;
-      
-      // Try with SUB key if we're currently using MAIN
-      if (this.switchToSubKey()) {
-        try {
-          const model = this.genAI.getGenerativeModel({ model: this.model });
-          const result = await model.generateContent(prompt);
-          const response = result.response;
-          const audioDescriptionText = response.text();
-          
-          // Parse the audio description into parameters
-          const audioParams = this.parseAudioDescription(audioDescriptionText);
-          
-          return {
-            rawDescription: audioDescriptionText,
-            params: audioParams,
-          };
-        } catch (subError) {
-          console.error('Error generating audio description with SUB API key:', subError);
-          lastError = subError;
-          
-          // Try with THIRD key if SUB key failed
-          if (this.switchToThirdKey()) {
-            try {
-              const model = this.genAI.getGenerativeModel({ model: this.model });
-              const result = await model.generateContent(prompt);
-              const response = result.response;
-              const audioDescriptionText = response.text();
-              
-              // Parse the audio description into parameters
-              const audioParams = this.parseAudioDescription(audioDescriptionText);
-              
-              return {
-                rawDescription: audioDescriptionText,
-                params: audioParams,
-              };
-            } catch (thirdError) {
-              console.error('Error generating audio description with THIRD API key:', thirdError);
-              throw thirdError; // No more fallbacks available
-            }
-          }
-        }
-      }
-      
-      // If we get here, all fallbacks failed or weren't available
-      throw lastError;
-    }
+    // Stub implementation - functionality is disabled
+    console.log('Audio description generation skipped - sound generation/usage is disabled');
+    return {
+      rawDescription: "Audio description generation is disabled",
+      params: { mood: mood || 'neutral' }
+    };
   }
   
   /**

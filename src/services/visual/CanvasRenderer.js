@@ -2,9 +2,12 @@
  * CanvasRenderer
  * Handles HTML Canvas rendering for the game
  * Provides methods for drawing backgrounds, characters, and effects
+ * 
+ * NOTE: Temporarily disabled as image generation/usage is incomplete
  */
 class CanvasRenderer {
   constructor() {
+    // Stub implementation - all functionality is disabled
     this.canvas = null;
     this.ctx = null;
     this.width = 0;
@@ -48,6 +51,8 @@ class CanvasRenderer {
         duration: 0
       }
     };
+    
+    console.log('CanvasRenderer is disabled - image generation/usage is incomplete');
   }
   
   /**
@@ -57,87 +62,44 @@ class CanvasRenderer {
    * @param {number} height - Canvas height
    */
   initialize(canvas, width, height) {
+    // Stub implementation - functionality is disabled
     if (this.initialized) return;
     
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
     this.width = width || canvas.width;
     this.height = height || canvas.height;
     
-    // Set canvas dimensions
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
-    
-    // Create layer canvases for compositing
-    for (const layer in this.layers) {
-      const layerCanvas = document.createElement('canvas');
-      layerCanvas.width = this.width;
-      layerCanvas.height = this.height;
-      this.layers[layer] = {
-        canvas: layerCanvas,
-        ctx: layerCanvas.getContext('2d')
-      };
-    }
-    
     this.initialized = true;
-    console.log('Canvas renderer initialized');
+    console.log('Canvas renderer initialization skipped - image generation/usage is disabled');
     
-    // Start render loop
-    this.startRenderLoop();
+    // Don't start render loop
   }
   
   /**
    * Start the render loop
    */
   startRenderLoop() {
-    const render = () => {
-      this.render();
-      this.animationFrameId = requestAnimationFrame(render);
-    };
-    
-    this.animationFrameId = requestAnimationFrame(render);
+    // Stub implementation - functionality is disabled
+    console.log('Render loop not started - image generation/usage is disabled');
   }
   
   /**
    * Stop the render loop
    */
   stopRenderLoop() {
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
-    }
+    // Stub implementation - functionality is disabled
+    // Nothing to stop since render loop is not started
   }
   
   /**
    * Render the current scene
    */
   render() {
+    // Stub implementation - functionality is disabled
     if (!this.initialized) return;
     
-    // Clear main canvas
-    this.ctx.clearRect(0, 0, this.width, this.height);
-    
-    // Clear all layer canvases
-    for (const layer in this.layers) {
-      this.layers[layer].ctx.clearRect(0, 0, this.width, this.height);
-    }
-    
-    // Render background layer
-    this.renderBackground();
-    
-    // Render character layer
-    this.renderCharacters();
-    
-    // Render effects layer
-    this.renderEffects();
-    
-    // Render overlay layer
-    this.renderOverlay();
-    
-    // Composite all layers onto main canvas
-    for (const layer in this.layers) {
-      this.ctx.drawImage(this.layers[layer].canvas, 0, 0);
-    }
+    // No rendering is performed
+    console.log('Rendering skipped - image generation/usage is disabled');
   }
   
   /**

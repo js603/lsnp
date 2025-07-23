@@ -4,6 +4,8 @@ import audioManager from './audioManager';
  * AudioController
  * Integrates the AudioManager with the StoryManager for LLM-directed audio
  * Interprets LLM audio descriptions and translates them to audio parameters
+ * 
+ * NOTE: Temporarily disabled as sound generation/usage is incomplete
  */
 class AudioController {
   constructor() {
@@ -11,6 +13,8 @@ class AudioController {
     this.currentAmbientSound = null;
     this.currentMood = 'neutral';
     this.initialized = false;
+    
+    console.log('AudioController is disabled - sound generation/usage is incomplete');
     
     // Map of mood keywords to audio parameters
     this.moodAudioMap = {
@@ -88,16 +92,11 @@ class AudioController {
    * Initialize the audio controller
    */
   async initialize() {
+    // Stub implementation - functionality is disabled
     if (this.initialized) return;
     
-    try {
-      // Initialize the audio manager
-      await this.audioManager.initialize();
-      this.initialized = true;
-      console.log('Audio controller initialized');
-    } catch (error) {
-      console.error('Failed to initialize audio controller:', error);
-    }
+    this.initialized = true;
+    console.log('Audio controller initialization skipped - sound generation/usage is disabled');
   }
   
   /**
@@ -106,33 +105,12 @@ class AudioController {
    * @param {string} sceneText - The scene text for context
    */
   async processAudioDescription(audioDescription, sceneText) {
+    // Stub implementation - functionality is disabled
     if (!this.initialized) {
       await this.initialize();
     }
     
-    try {
-      const { rawDescription, params } = audioDescription;
-      
-      // Extract mood from parameters or scene text
-      const mood = params.mood || this.extractMoodFromText(sceneText);
-      this.currentMood = mood;
-      
-      // Apply mood-based audio effects
-      this.applyMoodEffects(mood);
-      
-      // Play appropriate background music
-      this.playMoodBasedBgm(mood);
-      
-      // Generate ambient sounds based on scene
-      this.generateSceneAmbience(sceneText);
-      
-      // Play sound effects based on scene keywords
-      this.playSoundEffectsFromScene(sceneText);
-      
-      console.log(`Applied audio settings for mood: ${mood}`);
-    } catch (error) {
-      console.error('Error processing audio description:', error);
-    }
+    console.log('Audio description processing skipped - sound generation/usage is disabled');
   }
   
   /**

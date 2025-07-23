@@ -1,5 +1,7 @@
 import audioManager from './audioManager';
 
+// NOTE: Temporarily disabled as sound generation/usage is incomplete
+
 // Sound effect categories
 export const SFX_CATEGORIES = {
   UI: 'ui',
@@ -8,6 +10,9 @@ export const SFX_CATEGORIES = {
   ENVIRONMENT: 'environment',
   MYSTERY: 'mystery'
 };
+
+// Log a message indicating that sound effects are disabled
+console.log('Sound effects are disabled - sound generation/usage is incomplete');
 
 // Sound effect definitions
 // These would normally point to actual audio files

@@ -1,8 +1,10 @@
 import * as Tone from 'tone';
 
 // Audio Manager for handling all game audio
+// NOTE: Temporarily disabled as sound generation/usage is incomplete
 class AudioManager {
   constructor() {
+    // Stub implementation - all functionality is disabled
     this.initialized = false;
     this.bgmPlayer = null;
     this.sfxPlayers = {};
@@ -12,6 +14,8 @@ class AudioManager {
       bgm: 0,      // in decibels, relative to master
       sfx: 0       // in decibels, relative to master
     };
+    
+    console.log('AudioManager is disabled - sound generation/usage is incomplete');
     
     // Effects
     this.reverb = null;
@@ -23,189 +27,52 @@ class AudioManager {
 
   // Initialize the audio system - should be called after user interaction
   async initializeAfterUserInteraction() {
+    // Stub implementation - functionality is disabled
     if (this.initialized) return true;
     
-    try {
-      // Start audio context (must be triggered by user interaction)
-      await Tone.start();
-      
-      // Set up master volume
-      Tone.Destination.volume.value = this.volume.master;
-      
-      // Create effects
-      this.reverb = new Tone.Reverb({
-        decay: 2.5,
-        wet: 0.2
-      }).toDestination();
-      
-      this.filter = new Tone.Filter({
-        type: 'lowpass',
-        frequency: 20000,
-        Q: 1
-      }).connect(this.reverb);
-      
-      // Create BGM player
-      this.bgmPlayer = new Tone.Player({
-        url: '',
-        loop: true,
-        volume: this.volume.bgm,
-        fadeIn: 1,
-        fadeOut: 1
-      }).connect(this.filter);
-      
-      this.initialized = true;
-      this.initializationAttempted = true;
-      console.log('Audio system initialized successfully after user interaction');
-      return true;
-    } catch (error) {
-      this.initializationAttempted = true;
-      console.error('Failed to initialize audio system:', error);
-      return false;
-    }
+    this.initialized = true;
+    this.initializationAttempted = true;
+    console.log('Audio system initialization skipped - sound generation/usage is disabled');
+    return true;
   }
   
   // Legacy initialize method - now checks if initialization has been attempted
   async initialize() {
+    // Stub implementation - functionality is disabled
     if (this.initialized) return true;
     
-    // If we've already attempted initialization, don't try again
-    // This prevents repeated errors in the console
-    if (this.initializationAttempted) {
-      console.warn('Audio initialization was previously attempted but failed. Call initializeAfterUserInteraction() after a user gesture.');
-      return false;
-    }
-    
-    console.warn('Audio initialization should happen after user interaction. Call initializeAfterUserInteraction() after a user gesture.');
-    return false;
+    this.initialized = true;
+    this.initializationAttempted = true;
+    console.log('Audio system initialization skipped - sound generation/usage is disabled');
+    return true;
   }
 
   // Load and play background music
   async playBgm(url, options = {}) {
-    // Check if initialized and return early if not
-    if (!this.initialized) {
-      const initialized = await this.initialize();
-      if (!initialized) {
-        console.warn('Cannot play background music: Audio system not initialized');
-        return;
-      }
-    }
-    
-    const { 
-      fadeIn = 2, 
-      fadeOut = 2,
-      volume = this.volume.bgm,
-      loop = true
-    } = options;
-    
-    try {
-      // If there's already music playing, fade it out
-      if (this.bgmPlayer.state === 'started') {
-        this.bgmPlayer.volume.rampTo(-60, fadeOut);
-        
-        // Wait for fade out
-        await new Promise(resolve => setTimeout(resolve, fadeOut * 1000));
-        this.bgmPlayer.stop();
-      }
-      
-      // Set up new music
-      this.bgmPlayer.volume.value = -60; // Start silent
-      this.bgmPlayer.loop = loop;
-      this.bgmPlayer.load(url);
-      
-      // Wait for buffer to load
-      await new Promise(resolve => {
-        this.bgmPlayer.onstop = resolve;
-        this.bgmPlayer.onload = () => {
-          this.bgmPlayer.start();
-          this.bgmPlayer.volume.rampTo(volume, fadeIn);
-          this.currentBgm = url;
-          resolve();
-        };
-      });
-      
-      console.log(`Playing BGM: ${url}`);
-    } catch (error) {
-      console.error('Failed to play background music:', error);
-    }
+    // Stub implementation - functionality is disabled
+    console.log('BGM playback skipped - sound generation/usage is disabled');
+    return;
   }
 
   // Stop background music
   stopBgm(fadeOut = 2) {
-    if (!this.initialized) {
-      console.warn('Cannot stop background music: Audio system not initialized');
-      return;
-    }
-    
-    if (!this.bgmPlayer) return;
-    
-    this.bgmPlayer.volume.rampTo(-60, fadeOut);
-    setTimeout(() => {
-      this.bgmPlayer.stop();
-      this.currentBgm = null;
-    }, fadeOut * 1000);
+    // Stub implementation - functionality is disabled
+    console.log('BGM stop skipped - sound generation/usage is disabled');
+    return;
   }
 
   // Load and play a sound effect
   async playSfx(name, url, options = {}) {
-    // Check if initialized and return early if not
-    if (!this.initialized) {
-      const initialized = await this.initialize();
-      if (!initialized) {
-        console.warn(`Cannot play sound effect ${name}: Audio system not initialized`);
-        return;
-      }
-    }
-    
-    const {
-      volume = this.volume.sfx,
-      loop = false,
-      playbackRate = 1,
-      onload = null,
-      onend = null
-    } = options;
-    
-    try {
-      // Create player if it doesn't exist
-      if (!this.sfxPlayers[name]) {
-        this.sfxPlayers[name] = new Tone.Player({
-          url,
-          volume,
-          loop,
-          playbackRate,
-          onload,
-          onend
-        }).connect(this.reverb);
-      }
-      
-      // If already loaded, play immediately
-      if (this.sfxPlayers[name].loaded) {
-        this.sfxPlayers[name].start();
-      } else {
-        // Otherwise, load and then play
-        this.sfxPlayers[name].load(url);
-        this.sfxPlayers[name].onstop = onend;
-        this.sfxPlayers[name].onload = () => {
-          if (onload) onload();
-          this.sfxPlayers[name].start();
-        };
-      }
-      
-      console.log(`Playing SFX: ${name}`);
-    } catch (error) {
-      console.error(`Failed to play sound effect ${name}:`, error);
-    }
+    // Stub implementation - functionality is disabled
+    console.log(`SFX playback skipped for ${name} - sound generation/usage is disabled`);
+    return;
   }
 
   // Stop a specific sound effect
   stopSfx(name) {
-    if (!this.initialized) {
-      console.warn(`Cannot stop sound effect ${name}: Audio system not initialized`);
-      return;
-    }
-    
-    if (!this.sfxPlayers[name]) return;
-    
-    this.sfxPlayers[name].stop();
+    // Stub implementation - functionality is disabled
+    console.log(`SFX stop skipped for ${name} - sound generation/usage is disabled`);
+    return;
   }
 
   // Set master volume

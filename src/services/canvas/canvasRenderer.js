@@ -1,9 +1,11 @@
 // Canvas rendering service for dynamic graphics
+// NOTE: Temporarily disabled as image generation/usage is incomplete
 import { useEffect } from 'react';
 
 // Canvas rendering class
 class CanvasRenderer {
   constructor() {
+    // Stub implementation - all functionality is disabled
     this.canvas = null;
     this.ctx = null;
     this.width = 0;
@@ -11,57 +13,43 @@ class CanvasRenderer {
     this.renderQueue = [];
     this.animationFrameId = null;
     this.isRendering = false;
+    
+    console.log('CanvasRenderer is disabled - image generation/usage is incomplete');
   }
 
   // Initialize the canvas
   initialize(canvas, width, height) {
+    // Stub implementation - functionality is disabled
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
     this.width = width || canvas.width;
     this.height = height || canvas.height;
     
-    // Set canvas dimensions
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
-    
-    console.log(`Canvas initialized with dimensions ${this.width}x${this.height}`);
+    console.log(`Canvas initialization skipped - image generation/usage is disabled`);
     return this;
   }
 
   // Clear the canvas
   clear() {
-    if (!this.ctx) return;
-    this.ctx.clearRect(0, 0, this.width, this.height);
+    // Stub implementation - functionality is disabled
+    console.log('Canvas clear skipped - image generation/usage is disabled');
   }
 
   // Start the render loop
   startRendering() {
-    if (this.isRendering) return;
-    this.isRendering = true;
-    this.render();
+    // Stub implementation - functionality is disabled
+    console.log('Render loop not started - image generation/usage is disabled');
   }
 
   // Stop the render loop
   stopRendering() {
-    this.isRendering = false;
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
-    }
+    // Stub implementation - functionality is disabled
+    // Nothing to stop since render loop is not started
   }
 
   // Main render loop
   render() {
-    if (!this.isRendering) return;
-    
-    // Process render queue
-    while (this.renderQueue.length > 0) {
-      const renderItem = this.renderQueue.shift();
-      renderItem.render(this.ctx, this.width, this.height);
-    }
-    
-    // Continue render loop
-    this.animationFrameId = requestAnimationFrame(() => this.render());
+    // Stub implementation - functionality is disabled
+    console.log('Rendering skipped - image generation/usage is disabled');
   }
 
   // Add an item to the render queue

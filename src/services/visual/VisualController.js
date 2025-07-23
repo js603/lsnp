@@ -4,6 +4,8 @@ import canvasRenderer from './CanvasRenderer';
  * VisualController
  * Integrates the CanvasRenderer with the StoryManager for LLM-directed visuals
  * Interprets LLM visual descriptions and translates them to rendering commands
+ * 
+ * NOTE: Temporarily disabled as image generation/usage is incomplete
  */
 class VisualController {
   constructor() {
@@ -11,6 +13,8 @@ class VisualController {
     this.initialized = false;
     this.currentScene = null;
     this.currentCharacters = new Map();
+    
+    console.log('VisualController is disabled - image generation/usage is incomplete');
     
     // Map of mood keywords to visual parameters
     this.moodVisualMap = {
@@ -103,12 +107,12 @@ class VisualController {
    * @param {number} height - Canvas height
    */
   initialize(canvas, width, height) {
+    // Stub implementation - functionality is disabled
     if (this.initialized) return;
     
-    // Initialize the canvas renderer
-    this.renderer.initialize(canvas, width, height);
+    // Don't initialize the canvas renderer
     this.initialized = true;
-    console.log('Visual controller initialized');
+    console.log('Visual controller initialization skipped - image generation/usage is disabled');
   }
   
   /**
@@ -117,41 +121,13 @@ class VisualController {
    * @param {string} sceneText - The scene text for context
    */
   processVisualDescription(visualDescription, sceneText) {
+    // Stub implementation - functionality is disabled
     if (!this.initialized) {
       console.error('Visual controller not initialized');
       return;
     }
     
-    try {
-      // Extract mood from scene text
-      const mood = this.extractMoodFromText(sceneText);
-      
-      // Apply mood-based visual effects
-      this.applyMoodVisuals(mood);
-      
-      // Parse the visual description
-      const parsedDescription = this.parseVisualDescription(visualDescription);
-      
-      // Apply background based on description
-      this.applyBackground(parsedDescription.background);
-      
-      // Update character positions and states
-      this.updateCharacters(parsedDescription.characters, sceneText);
-      
-      // Apply special effects based on description and scene text
-      this.applyEffects(parsedDescription.effects, sceneText);
-      
-      // Store current scene
-      this.currentScene = {
-        mood,
-        description: visualDescription,
-        parsedDescription
-      };
-      
-      console.log(`Applied visual settings for mood: ${mood}`);
-    } catch (error) {
-      console.error('Error processing visual description:', error);
-    }
+    console.log('Visual description processing skipped - image generation/usage is disabled');
   }
   
   /**
