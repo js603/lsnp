@@ -3,8 +3,8 @@ import { Groq } from 'groq-sdk';
 
 // Initialize Groq clients with placeholder API keys
 // Users need to provide their own API keys at runtime
-let mainApiKey = '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';
-let subApiKey = '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';
+let mainApiKey = process.env.REACT_APP_GROQ_API_MAIN_KEY;
+let subApiKey = process.env.REACT_APP_GROQ_API_SUB_KEY;
 
 // Check if we're in development mode and use environment variables if available
 if (process.env.NODE_ENV === 'development') {

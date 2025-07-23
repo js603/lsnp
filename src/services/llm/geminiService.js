@@ -19,9 +19,9 @@ class GeminiService {
   constructor(apiKey) {
     // Use a placeholder approach for API keys
     // Users need to provide their own API keys at runtime
-    this.mainApiKey = apiKey || 'AIzaSyDC11rqjU30OJnLjaBFOaazZV0klM5raU8';
-    this.subApiKey = 'AIzaSyAhscNjW8GmwKPuKzQ47blCY_bDanR-B84';
-    this.thirdApiKey = 'AIzaSyCH-v67rjijFO_So2mTDj_-qIy2aNJYgz0';
+    this.mainApiKey = apiKey || process.env.REACT_APP_GEMINI_API_MAIN_KEY;
+    this.subApiKey = process.env.REACT_APP_GEMINI_API_SUB_KEY;
+    this.thirdApiKey = process.env.REACT_APP_GEMINI_API_THIRD_KEY;
     
     // Check if we're in development mode and use environment variables if available
     if (process.env.NODE_ENV === 'development') {
