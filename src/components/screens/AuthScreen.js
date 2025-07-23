@@ -80,19 +80,19 @@ const AuthScreen = () => {
     
     switch (errorCode) {
       case 'auth/invalid-email':
-        return 'Invalid email address.';
+        return '유효하지 않은 이메일 주소입니다.';
       case 'auth/user-disabled':
-        return 'This account has been disabled.';
+        return '이 계정은 비활성화되었습니다.';
       case 'auth/user-not-found':
-        return 'No account found with this email.';
+        return '해당 이메일로 등록된 계정을 찾을 수 없습니다.';
       case 'auth/wrong-password':
-        return 'Incorrect password.';
+        return '비밀번호가 올바르지 않습니다.';
       case 'auth/email-already-in-use':
-        return 'This email is already in use.';
+        return '이미 사용 중인 이메일입니다.';
       case 'auth/weak-password':
-        return 'Password is too weak. Use at least 6 characters.';
+        return '비밀번호가 너무 약합니다. 최소 6자 이상 사용해주세요.';
       default:
-        return 'An error occurred. Please try again.';
+        return '오류가 발생했습니다. 다시 시도해주세요.';
     }
   };
   
@@ -106,13 +106,13 @@ const AuthScreen = () => {
   return (
     <GameContainer backgroundImage="/assets/images/title_bg.jpg">
       <AuthContainer>
-        <Title>{isLogin ? 'Login' : 'Register'}</Title>
+        <Title>{isLogin ? '로그인' : '회원가입'}</Title>
         
         {error && <ErrorMessage>{error}</ErrorMessage>}
         
         <AuthForm onSubmit={handleSubmit}>
           <FormField>
-            <FormLabel>Email</FormLabel>
+            <FormLabel>이메일</FormLabel>
             <FormInput
               type="email"
               value={email}
@@ -123,7 +123,7 @@ const AuthScreen = () => {
           </FormField>
           
           <FormField>
-            <FormLabel>Password</FormLabel>
+            <FormLabel>비밀번호</FormLabel>
             <FormInput
               type="password"
               value={password}
@@ -135,7 +135,7 @@ const AuthScreen = () => {
           
           {!isLogin && (
             <FormField>
-              <FormLabel>Display Name</FormLabel>
+              <FormLabel>닉네임</FormLabel>
               <FormInput
                 type="text"
                 value={displayName}
@@ -148,19 +148,19 @@ const AuthScreen = () => {
           )}
           
           <FormButton type="submit" disabled={isLoading}>
-            {isLoading ? 'Processing...' : isLogin ? 'Login' : 'Register'}
+            {isLoading ? '처리 중...' : isLogin ? '로그인' : '회원가입'}
           </FormButton>
         </AuthForm>
         
         <ToggleFormText>
-          {isLogin ? "Don't have an account?" : "Already have an account?"}
+          {isLogin ? "계정이 없으신가요?" : "이미 계정이 있으신가요?"}
           <ToggleFormButton type="button" onClick={toggleForm} disabled={isLoading}>
-            {isLogin ? 'Register' : 'Login'}
+            {isLogin ? '회원가입' : '로그인'}
           </ToggleFormButton>
         </ToggleFormText>
         
         <BackButton onClick={() => game.setCurrentScreen('title')} disabled={isLoading}>
-          Back to Title
+          메인으로 돌아가기
         </BackButton>
       </AuthContainer>
     </GameContainer>

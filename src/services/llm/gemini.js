@@ -52,7 +52,7 @@ export const generateStoryContent = async (
             role: 'user',
             parts: [
               {
-                text: `You are a creative storyteller for a sound novel mystery game called "Night of Pigeonweed". Create atmospheric, suspenseful narrative with a focus on mystery and psychological tension. The story takes place in an isolated setting.
+                text: `당신은 "비둘기밥의 밤"이라는 사운드 소설 미스터리 게임의 창의적인 이야기꾼입니다. 미스터리와 심리적 긴장감에 중점을 둔 분위기 있고 긴장감 넘치는 이야기를 만드세요. 이야기는 고립된 환경에서 진행됩니다.
 
 ${prompt}`
               }
@@ -106,13 +106,13 @@ export const generateChoices = async (
     try {
       const geminiModel = client.getGenerativeModel({ model: DEFAULT_MODEL });
       
-      const prompt = `You are generating player choices for a sound novel mystery game. Create first-person internal thoughts that represent meaningful decision points.
+      const prompt = `당신은 사운드 소설 미스터리 게임을 위한 플레이어 선택지를 생성하고 있습니다. 의미 있는 결정 지점을 나타내는 1인칭 내면의 생각을 만드세요.
 
-Based on the following story context, generate ${numChoices} different choices for the player. Each choice should be a first-person thought or consideration (e.g., "Should I open the door?", "Maybe I should hide and wait?"). Make the choices meaningful and divergent, leading to different possible story paths.
+다음 이야기 맥락을 기반으로 플레이어를 위한 ${numChoices}개의 서로 다른 선택지를 생성하세요. 각 선택지는 1인칭 생각이나 고려사항이어야 합니다(예: "문을 열어볼까?", "숨어서 기다려볼까?"). 선택지는 의미 있고 서로 다른 이야기 경로로 이어질 수 있도록 다양하게 만드세요.
 
-Context: ${currentContext}
+맥락: ${currentContext}
 
-Choices:`;
+선택지:`;
 
       const result = await geminiModel.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],

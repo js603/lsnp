@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useGame } from '../../contexts/GameContext';
 import GameContainer from '../game/GameContainer';
-import soundEffects from '../../services/audio/soundEffects';
 
 // Title screen component
 const TitleScreen = () => {
@@ -16,57 +15,25 @@ const TitleScreen = () => {
     const savedGame = localStorage.getItem('pigeonweed_save');
     setShowContinue(!!savedGame);
     
-    // Note: We no longer try to play music or apply effects here
-    // Audio will be initialized on user interaction (button click)
-    
-    // Clean up
-    return () => {
-      // No need to clean up audio effects since they weren't applied
-    };
-  }, [game.currentBgm]);
-  
-  // Helper function to initialize audio system
-  const initializeAudio = async () => {
-    try {
-      // Initialize audio system after user interaction
-      await soundEffects.audioManager.initializeAfterUserInteraction();
-      
-      // Play title music if not already playing
-      if (game.currentBgm !== 'MAIN_THEME') {
-        soundEffects.playMusic('MAIN_THEME', { volume: -12 });
-      }
-      
-      // Apply subtle atmospheric effect
-      soundEffects.applyAtmosphericEffect(0.3);
-      
-      return true;
-    } catch (error) {
-      console.error('Failed to initialize audio:', error);
-      return false;
-    }
-  };
+    // 오디오 초기화 및 재생 코드 제거됨
+  }, []);
   
   // Handle start new game
-  const handleStartNewGame = async () => {
+  const handleStartNewGame = () => {
     if (!nameInput.trim()) {
       setShowNameInput(true);
       return;
     }
-    
-    // Initialize audio on user interaction
-    await initializeAudio();
-    
+
+    // 오디오 관련 코드 제거
     game.setPlayerName(nameInput);
     game.startNewGame();
   };
   
   // Handle continue game
-  const handleContinueGame = async () => {
-    // Initialize audio on user interaction
-    await initializeAudio();
-    
+  const handleContinueGame = () => {
+    // 오디오 관련 코드 제거
     game.setCurrentScreen('game');
-    soundEffects.playSfx('UI_CLICK');
   };
   
   // Handle name input change
@@ -75,12 +42,10 @@ const TitleScreen = () => {
   };
   
   // Handle name input submit
-  const handleNameInputSubmit = async (e) => {
+  const handleNameInputSubmit = (e) => {
     e.preventDefault();
     if (nameInput.trim()) {
-      // Initialize audio on user interaction
-      await initializeAudio();
-      
+      // 오디오 관련 코드 제거
       game.setPlayerName(nameInput);
       handleStartNewGame();
     }
@@ -90,46 +55,40 @@ const TitleScreen = () => {
     <GameContainer>
       <TitleContainer>
         <Title>비둘기밥의 밤</Title>
-        <Subtitle>Night of Pigeonweed</Subtitle>
+        <Subtitle>비둘기밥의 밤</Subtitle>
         
         {showNameInput ? (
           <NameInputForm onSubmit={handleNameInputSubmit}>
-            <NameInputLabel>Enter your name:</NameInputLabel>
+            <NameInputLabel>이름을 입력하세요:</NameInputLabel>
             <NameInput
               type="text"
               value={nameInput}
               onChange={handleNameInputChange}
               autoFocus
               maxLength={20}
-              placeholder="Your name..."
+              placeholder="당신의 이름..."
             />
-            <NameInputButton type="submit">Start</NameInputButton>
+            <NameInputButton type="submit">시작</NameInputButton>
           </NameInputForm>
         ) : (
           <MenuContainer>
-            <MenuButton onClick={handleStartNewGame}>New Game</MenuButton>
+            <MenuButton onClick={handleStartNewGame}>새 게임</MenuButton>
             {showContinue && (
-              <MenuButton onClick={handleContinueGame}>Continue</MenuButton>
+              <MenuButton onClick={handleContinueGame}>이어하기</MenuButton>
             )}
-            <MenuButton onClick={async () => {
-              await initializeAudio();
-              soundEffects.playSfx('UI_CLICK');
+            <MenuButton onClick={() => {
               game.setCurrentScreen('auth');
-            }}>Login / Register</MenuButton>
-            <MenuButton onClick={async () => {
-              await initializeAudio();
-              soundEffects.playSfx('UI_CLICK');
+            }}>로그인 / 회원가입</MenuButton>
+            <MenuButton onClick={() => {
               game.setCurrentScreen('settings');
-            }}>Settings</MenuButton>
-            <MenuButton onClick={async () => {
-              await initializeAudio();
-              soundEffects.playSfx('UI_CLICK');
+            }}>설정</MenuButton>
+            <MenuButton onClick={() => {
               game.setCurrentScreen('credits');
-            }}>Credits</MenuButton>
+            }}>제작진</MenuButton>
           </MenuContainer>
         )}
         
-        <VersionInfo>v0.1.0 - Alpha</VersionInfo>
+        <VersionInfo>v0.1.0 - 알파 버전</VersionInfo>
       </TitleContainer>
     </GameContainer>
   );

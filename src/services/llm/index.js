@@ -92,19 +92,19 @@ export const generateChoices = async (
   }
 };
 
-// Prompt templates for different game scenarios
+// 다양한 게임 시나리오를 위한 프롬프트 템플릿
 export const PROMPT_TEMPLATES = {
-  GAME_START: `You are starting a new mystery story in an isolated setting. Set the scene with atmospheric description. The protagonist has just arrived at [LOCATION]. Describe the initial setting, the weather, and the protagonist's first impressions. End with something slightly unsettling to create tension.`,
-  
-  CONTINUE_STORY: `Continue the story from where we left off. The current situation is: [CONTEXT]. Develop the narrative further, maintaining the mysterious and suspenseful atmosphere. Introduce subtle clues or developments that advance the plot.`,
-  
-  INVESTIGATE_OBJECT: `The protagonist is examining [OBJECT] more closely. Describe what they discover in detail. Include sensory details and possibly a small revelation or hint that adds to the mystery.`,
-  
-  ENCOUNTER_CHARACTER: `The protagonist encounters a character named [CHARACTER_NAME]. Describe this character's appearance (keeping details minimal to allow player imagination), their demeanor, and the initial interaction. This character should feel slightly mysterious.`,
-  
-  TENSE_MOMENT: `Create a tense moment where the protagonist [ACTION]. Build suspense through pacing, environmental details, and the protagonist's internal thoughts. Something unexpected should happen that raises the stakes.`,
-  
-  REVELATION: `The protagonist has just discovered [REVELATION]. Describe their reaction and how this changes their understanding of the situation. This should be a significant plot development that deepens the mystery.`,
+  GAME_START: `당신은 고립된 환경에서 새로운 미스터리 이야기를 시작하고 있습니다. 분위기가 느껴지는 묘사로 장면을 설정하세요. 주인공이 방금 [LOCATION]에 도착했습니다. 초기 설정, 날씨, 그리고 주인공의 첫인상을 묘사하세요. 긴장감을 조성하기 위해 약간 불안한 무언가로 끝내세요.`,
+
+  CONTINUE_STORY: `이야기를 이어서 진행하세요. 현재 상황은 다음과 같습니다: [CONTEXT]. 신비롭고 긴장감 넘치는 분위기를 유지하면서 내러티브를 더 발전시키세요. 플롯을 진행시키는 미묘한 단서나 발전을 소개하세요.`,
+
+  INVESTIGATE_OBJECT: `주인공이 [OBJECT]를 더 자세히 조사하고 있습니다. 그들이 발견한 것을 자세히 설명하세요. 감각적인 세부 사항과 미스터리에 더해질 수 있는 작은 계시나 힌트를 포함하세요.`,
+
+  ENCOUNTER_CHARACTER: `주인공이 [CHARACTER_NAME]이라는 캐릭터를 만납니다. 이 캐릭터의 외모(플레이어의 상상력을 위해 세부 사항을 최소화하며), 그들의 태도, 그리고 초기 상호작용을 설명하세요. 이 캐릭터는 약간 신비롭게 느껴져야 합니다.`,
+
+  TENSE_MOMENT: `주인공이 [ACTION]하는 긴장된 순간을 만드세요. 페이싱, 환경적 세부 사항, 그리고 주인공의 내면적 생각을 통해 서스펜스를 구축하세요. 판돈을 높이는 예상치 못한 무언가가 일어나야 합니다.`,
+
+  REVELATION: `주인공이 방금 [REVELATION]을 발견했습니다. 그들의 반응과 이것이 상황에 대한 그들의 이해를 어떻게 바꾸는지 설명하세요. 이것은 미스터리를 더 깊게 하는 중요한 플롯 발전이어야 합니다.`,
 };
 
 // Replace template placeholders with actual values

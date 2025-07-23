@@ -69,7 +69,7 @@ const TextDisplay = ({
       ref={textRef} 
       onClick={handleClick} 
       className={className}
-      isComplete={isComplete}
+      $isComplete={isComplete}
     >
       {displayedText}
       {!isComplete && <Cursor />}
@@ -89,7 +89,7 @@ const TextContainer = styled.div`
   width: 100%;
   min-height: 150px;
   margin-bottom: 2rem;
-  cursor: ${props => props.isComplete ? 'default' : 'pointer'};
+  cursor: ${props => props.$isComplete ? 'default' : 'pointer'};
   position: relative;
   font-family: 'Noto Serif', serif;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);

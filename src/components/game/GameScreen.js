@@ -4,6 +4,7 @@ import { useGame } from '../../contexts/GameContext';
 import GameContainer from './GameContainer';
 import TextDisplay from './TextDisplay';
 import ChoiceSelection from './ChoiceSelection';
+// SceneRenderer and CharacterSilhouette are still imported but won't render anything in text-only mode
 import SceneRenderer from './SceneRenderer';
 import CharacterSilhouette from '../ui/CharacterSilhouette';
 import soundEffects from '../../services/audio/soundEffects';
@@ -12,7 +13,6 @@ import soundEffects from '../../services/audio/soundEffects';
 const GameScreen = () => {
   const game = useGame();
   const [textDisplayComplete, setTextDisplayComplete] = useState(false);
-  // We're removing the sceneRenderComplete state since it's not used in the component
   const [typingSound, setTypingSound] = useState(null);
   
   // Handle text display completion
@@ -21,20 +21,9 @@ const GameScreen = () => {
     
     // Stop typing sound if playing
     if (typingSound) {
-      soundEffects.stopSfx('UI_TEXT_TYPING');
+      typingSound.stop();
       setTypingSound(null);
     }
-    
-    // Play choice appear sound if there are choices
-    if (game.currentScene?.choices?.length > 0) {
-      soundEffects.playSfx('UI_CHOICE_APPEAR');
-    }
-  };
-  
-  // Handle scene render completion
-  const handleSceneRenderComplete = () => {
-    // We removed the sceneRenderComplete state since it wasn't used elsewhere
-    // This function is still needed for the SceneRenderer onRenderComplete prop
   };
   
   // Handle choice selection
@@ -47,19 +36,18 @@ const GameScreen = () => {
   useEffect(() => {
     setTextDisplayComplete(false);
     
-    // Play typing sound
+    // Dummy typing sound object
     if (game.currentScene) {
-      const sound = soundEffects.playSfx('UI_TEXT_TYPING', { loop: true });
-      setTypingSound(sound);
+      setTypingSound({ stop: () => {} });
     }
     
     // Clean up
     return () => {
       if (typingSound) {
-        soundEffects.stopSfx('UI_TEXT_TYPING');
+        typingSound.stop();
       }
     };
-  }, [game.currentScene, typingSound]);
+  }, [game.currentScene]);
   
   // If no current scene, show loading
   if (!game.currentScene) {
@@ -67,7 +55,7 @@ const GameScreen = () => {
       <GameContainer>
         <LoadingContainer>
           <LoadingSpinner />
-          <LoadingText>Loading story...</LoadingText>
+          <LoadingText>이야기 불러오는 중...</LoadingText>
         </LoadingContainer>
       </GameContainer>
     );
@@ -75,22 +63,21 @@ const GameScreen = () => {
   
   return (
     <GameContainer>
-      {/* Scene renderer for background */}
+      {/* Scene renderer is kept for compatibility but doesn't render anything in text-only mode */}
       <SceneRenderer 
         sceneDescription={game.currentScene.content}
         characters={game.characters}
         mood={game.currentScene.mood}
-        onRenderComplete={handleSceneRenderComplete}
       />
       
-      {/* Character silhouettes */}
+      {/* Character silhouettes are kept for compatibility but don't render anything in text-only mode */}
       {game.characters.map(character => (
         <CharacterSilhouette
           key={character.id}
+          character={character}
           position={character.position}
           emotion={character.emotion || 'neutral'}
           size={character.size || 'medium'}
-          opacity={character.opacity || 0.8}
         />
       ))}
       
@@ -122,10 +109,10 @@ const GameScreen = () => {
       {/* Game controls */}
       <GameControls>
         <ControlButton onClick={() => game.setCurrentScreen('settings')}>
-          Settings
+          설정
         </ControlButton>
         <ControlButton onClick={() => game.setCurrentScreen('title')}>
-          Main Menu
+          메인 메뉴
         </ControlButton>
       </GameControls>
     </GameContainer>

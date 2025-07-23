@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import llmService from '../services/llm';
 import soundEffects from '../services/audio/soundEffects';
 import authService from '../services/firebase/authService';
@@ -22,23 +21,14 @@ const initialState = {
   playerName: '',
   playedEndings: [],
   
-  // Game settings
+  // Game settings - text-only mode
   settings: {
     textSpeed: 30, // ms per character
-    volume: {
-      master: 0.8,
-      bgm: 0.7,
-      sfx: 0.8
-    },
     autoSave: true
   },
   
   // Flags for tracking story branches and events
-  flags: {},
-  
-  // Current background music and ambient sounds
-  currentBgm: null,
-  currentAmbient: null
+  flags: {}
 };
 
 // Action types
@@ -55,9 +45,8 @@ const ACTION_TYPES = {
   SET_FLAG: 'SET_FLAG',
   UPDATE_SETTINGS: 'UPDATE_SETTINGS',
   LOAD_GAME: 'LOAD_GAME',
-  PLAY_MUSIC: 'PLAY_MUSIC',
-  PLAY_AMBIENT: 'PLAY_AMBIENT',
   ADD_PLAYED_ENDING: 'ADD_PLAYED_ENDING'
+  // Audio-related action types removed for text-only mode
 };
 
 // Game reducer
@@ -151,18 +140,6 @@ const gameReducer = (state, action) => {
         isInitialized: true
       };
       
-    case ACTION_TYPES.PLAY_MUSIC:
-      return {
-        ...state,
-        currentBgm: action.payload
-      };
-      
-    case ACTION_TYPES.PLAY_AMBIENT:
-      return {
-        ...state,
-        currentAmbient: action.payload
-      };
-      
     case ACTION_TYPES.ADD_PLAYED_ENDING:
       return {
         ...state,
@@ -198,14 +175,7 @@ export const GameProvider = ({ children }) => {
           }
         }
         
-        // Note: Audio initialization is now deferred until user interaction
-        // We'll initialize it in TitleScreen.js when a button is clicked
-        
-        // Still set volume settings so they're ready when audio is initialized
-        // These won't cause errors even if audio isn't initialized yet
-        soundEffects.audioManager.setMasterVolume(state.settings.volume.master * 20 - 20); // Convert 0-1 to -20-0 dB
-        soundEffects.audioManager.setBgmVolume(state.settings.volume.bgm * 20 - 20);
-        soundEffects.audioManager.setSfxVolume(state.settings.volume.sfx * 20 - 20);
+        // 오디오 초기화 코드 제거됨
         
         dispatch({ type: ACTION_TYPES.INITIALIZE_GAME });
       } catch (error) {
@@ -218,7 +188,7 @@ export const GameProvider = ({ children }) => {
     if (!state.isInitialized) {
       initializeGame();
     }
-  }, [state.isInitialized, state.settings.volume]);
+  }, [state.isInitialized]);
   
   // Auto-save game when state changes
   useEffect(() => {
@@ -265,13 +235,10 @@ export const GameProvider = ({ children }) => {
     dispatch({ type: ACTION_TYPES.SET_LOADING, payload: true });
     
     try {
-      // Play UI sound
-      soundEffects.playSfx('UI_CLICK');
-      
-      // Generate initial scene using LLM
+      // LLM을 사용하여 초기 장면 생성
       const initialScenePrompt = llmService.fillPromptTemplate(
         llmService.PROMPT_TEMPLATES.GAME_START,
-        { LOCATION: '마을' } // Default location
+        { LOCATION: '마을' } // 기본 위치
       );
       
       const initialSceneContent = await llmService.generateStoryContent(initialScenePrompt);
@@ -284,12 +251,9 @@ export const GameProvider = ({ children }) => {
         id: 'scene_1',
         content: initialSceneContent,
         choices: choices,
-        background: 'village',
-        mood: 'mysterious'
+        background: 'village', // Kept for compatibility but not used visually
+        mood: 'mysterious'     // Kept for compatibility but not used for audio
       };
-      
-      // Start background music
-      soundEffects.playMusic('MAIN_THEME');
       
       dispatch({
         type: ACTION_TYPES.START_NEW_GAME,
@@ -314,19 +278,16 @@ export const GameProvider = ({ children }) => {
     dispatch({ type: ACTION_TYPES.SET_LOADING, payload: true });
     
     try {
-      // Play UI sound
-      soundEffects.playSfx('UI_CHOICE_SELECT');
-      
       const selectedChoice = state.choices[choiceIndex];
       
       // Clear current choices
       dispatch({ type: ACTION_TYPES.SELECT_CHOICE });
       
-      // Generate next scene based on the choice
+      // 선택에 기반하여 다음 장면 생성
       const continuePrompt = llmService.fillPromptTemplate(
         llmService.PROMPT_TEMPLATES.CONTINUE_STORY,
         {
-          CONTEXT: `${state.currentScene.content}\n\nThe player chose: "${selectedChoice}"`
+          CONTEXT: `${state.currentScene.content}\n\n플레이어가 선택한 항목: "${selectedChoice}"`
         }
       );
       
@@ -340,8 +301,8 @@ export const GameProvider = ({ children }) => {
         id: `scene_${state.sceneHistory.length + 2}`,
         content: nextSceneContent,
         choices: newChoices,
-        background: state.currentScene.background, // Inherit background for now
-        mood: state.currentScene.mood // Inherit mood for now
+        background: state.currentScene.background, // Kept for compatibility but not used visually
+        mood: state.currentScene.mood // Kept for compatibility but not used for audio
       };
       
       // Check for special keywords in the scene to update game state
@@ -363,16 +324,12 @@ export const GameProvider = ({ children }) => {
         characters.push(newCharacter);
       }
       
-      // Check for mood changes
+      // Check for mood changes - still useful for narrative context even in text-only mode
       let mood = state.currentScene.mood;
       if (lowerContent.includes('tense') || lowerContent.includes('scary')) {
         mood = 'tense';
-        soundEffects.playMusic('TENSION');
-        soundEffects.applyAtmosphericEffect(0.7);
       } else if (lowerContent.includes('revelation') || lowerContent.includes('discover')) {
         mood = 'revelation';
-        soundEffects.playMusic('REVELATION');
-        soundEffects.applyAtmosphericEffect(0.3);
       }
       
       // Update the next scene with new mood
@@ -395,23 +352,11 @@ export const GameProvider = ({ children }) => {
   };
   
   const updateSettings = (newSettings) => {
+    // In text-only mode, we only have text speed and auto-save settings
     dispatch({
       type: ACTION_TYPES.UPDATE_SETTINGS,
       payload: newSettings
     });
-    
-    // Update audio settings if they changed
-    if (newSettings.volume) {
-      if (newSettings.volume.master !== undefined) {
-        soundEffects.audioManager.setMasterVolume(newSettings.volume.master * 20 - 20);
-      }
-      if (newSettings.volume.bgm !== undefined) {
-        soundEffects.audioManager.setBgmVolume(newSettings.volume.bgm * 20 - 20);
-      }
-      if (newSettings.volume.sfx !== undefined) {
-        soundEffects.audioManager.setSfxVolume(newSettings.volume.sfx * 20 - 20);
-      }
-    }
   };
   
   const setFlag = (key, value) => {
@@ -422,9 +367,6 @@ export const GameProvider = ({ children }) => {
   };
   
   const setCurrentScreen = (screen) => {
-    // Play UI sound
-    soundEffects.playSfx('UI_CLICK');
-  
     // Update state for backward compatibility
     dispatch({
       type: ACTION_TYPES.SET_CURRENT_SCREEN,
@@ -460,24 +402,15 @@ export const GameProvider = ({ children }) => {
     });
   };
   
-  const playMusic = (musicId, options = {}) => {
-    soundEffects.playMusic(musicId, options);
-    
-    dispatch({
-      type: ACTION_TYPES.PLAY_MUSIC,
-      payload: musicId
-    });
+  // No-op functions for text-only mode
+  const playMusic = (musicId) => {
+    // No-op implementation for text-only mode
+    return;
   };
   
   const playAmbientSound = (description) => {
-    const ambient = soundEffects.playAmbientSound(description);
-    
-    dispatch({
-      type: ACTION_TYPES.PLAY_AMBIENT,
-      payload: description
-    });
-    
-    return ambient;
+    // No-op implementation for text-only mode
+    return { stop: () => {} };
   };
   
   const addPlayedEnding = (endingId) => {

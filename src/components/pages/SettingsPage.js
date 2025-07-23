@@ -6,11 +6,9 @@ import styled from 'styled-components';
  * Allows users to configure game settings
  */
 const SettingsPage = () => {
-  // Settings state
+  // Settings state - 오디오 관련 설정 제거됨
   const [settings, setSettings] = useState({
     textSpeed: 30, // ms per character
-    bgmVolume: 70, // percentage
-    sfxVolume: 80, // percentage
     autoSave: true,
     fullscreen: false,
     language: 'ko', // ko, en
@@ -65,37 +63,7 @@ const SettingsPage = () => {
         <SettingValue>{100 - settings.textSpeed}%</SettingValue>
       </SettingsGroup>
       
-      <SettingsGroup>
-        <SettingLabel>배경음악 볼륨</SettingLabel>
-        <RangeContainer>
-          <span>0%</span>
-          <RangeInput 
-            type="range" 
-            min="0" 
-            max="100" 
-            value={settings.bgmVolume} 
-            onChange={(e) => handleChange('bgmVolume', parseInt(e.target.value))}
-          />
-          <span>100%</span>
-        </RangeContainer>
-        <SettingValue>{settings.bgmVolume}%</SettingValue>
-      </SettingsGroup>
-      
-      <SettingsGroup>
-        <SettingLabel>효과음 볼륨</SettingLabel>
-        <RangeContainer>
-          <span>0%</span>
-          <RangeInput 
-            type="range" 
-            min="0" 
-            max="100" 
-            value={settings.sfxVolume} 
-            onChange={(e) => handleChange('sfxVolume', parseInt(e.target.value))}
-          />
-          <span>100%</span>
-        </RangeContainer>
-        <SettingValue>{settings.sfxVolume}%</SettingValue>
-      </SettingsGroup>
+      {/* 오디오 관련 설정 UI 제거됨 */}
       
       <SettingsGroup>
         <CheckboxContainer>
@@ -136,8 +104,6 @@ const SettingsPage = () => {
         <ResetButton onClick={() => {
           const defaultSettings = {
             textSpeed: 30,
-            bgmVolume: 70,
-            sfxVolume: 80,
             autoSave: true,
             fullscreen: false,
             language: 'ko',
