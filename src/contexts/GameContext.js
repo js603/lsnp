@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import llmService from '../services/llm';
 import soundEffects from '../services/audio/soundEffects';
 import authService from '../services/firebase/authService';
@@ -297,6 +298,9 @@ export const GameProvider = ({ children }) => {
           characters: []
         }
       });
+      
+      // Navigate to game screen
+      window.location.hash = '/game';
     } catch (error) {
       console.error('Error starting new game:', error);
     } finally {
@@ -420,11 +424,33 @@ export const GameProvider = ({ children }) => {
   const setCurrentScreen = (screen) => {
     // Play UI sound
     soundEffects.playSfx('UI_CLICK');
-    
+  
+    // Update state for backward compatibility
     dispatch({
       type: ACTION_TYPES.SET_CURRENT_SCREEN,
       payload: screen
     });
+  
+    // Navigate using window.location.hash
+    // This works with HashRouter
+    switch (screen) {
+      case 'game':
+        window.location.hash = '/game';
+        break;
+      case 'settings':
+        window.location.hash = '/settings';
+        break;
+      case 'credits':
+        window.location.hash = '/credits';
+        break;
+      case 'auth':
+        window.location.hash = '/auth';
+        break;
+      case 'title':
+      default:
+        window.location.hash = '/';
+        break;
+    }
   };
   
   const setPlayerName = (name) => {

@@ -1,4 +1,5 @@
 import React, { lazy, Suspense } from 'react';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { GameProvider, useGame } from './contexts/GameContext';
 import { ErrorProvider } from './contexts/ErrorContext';
 import ErrorDisplay from './components/ui/ErrorDisplay';
@@ -34,26 +35,21 @@ const AppContent = () => {
     );
   }
   
-  // Render the appropriate screen based on current screen state
+  // Render the router with routes for each screen
   // Wrap with Suspense for lazy loading
   return (
-    <Suspense fallback={<LoadingScreen />}>
-      {(() => {
-        switch (game.currentScreen) {
-          case 'game':
-            return <GameScreen />;
-          case 'settings':
-            return <SettingsScreen />;
-          case 'credits':
-            return <CreditsScreen />;
-          case 'auth':
-            return <AuthScreen />;
-          case 'title':
-          default:
-            return <TitleScreen />;
-        }
-      })()}
-    </Suspense>
+    <Router>
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          <Route path="/game" element={<GameScreen />} />
+          <Route path="/settings" element={<SettingsScreen />} />
+          <Route path="/credits" element={<CreditsScreen />} />
+          <Route path="/auth" element={<AuthScreen />} />
+          <Route path="/" element={<TitleScreen />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </Router>
   );
 };
 
