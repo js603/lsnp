@@ -17,9 +17,25 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
  */
 class GeminiService {
   constructor(apiKey) {
-    this.mainApiKey = apiKey || process.env.REACT_APP_GEMINI_API_MAIN_KEY;
-    this.subApiKey = process.env.REACT_APP_GEMINI_API_SUB_KEY;
-    this.thirdApiKey = process.env.REACT_APP_GEMINI_API_THIRD_KEY;
+    // Use a placeholder approach for API keys
+    // Users need to provide their own API keys at runtime
+    this.mainApiKey = apiKey || 'AIzaSyDC11rqjU30OJnLjaBFOaazZV0klM5raU8';
+    this.subApiKey = 'AIzaSyAhscNjW8GmwKPuKzQ47blCY_bDanR-B84';
+    this.thirdApiKey = 'AIzaSyCH-v67rjijFO_So2mTDj_-qIy2aNJYgz0';
+    
+    // Check if we're in development mode and use environment variables if available
+    if (process.env.NODE_ENV === 'development') {
+      if (process.env.REACT_APP_GEMINI_API_MAIN_KEY && process.env.REACT_APP_GEMINI_API_MAIN_KEY !== 'YOUR_GEMINI_API_KEY') {
+        this.mainApiKey = process.env.REACT_APP_GEMINI_API_MAIN_KEY;
+      }
+      if (process.env.REACT_APP_GEMINI_API_SUB_KEY && process.env.REACT_APP_GEMINI_API_SUB_KEY !== 'YOUR_GEMINI_API_SUB_KEY') {
+        this.subApiKey = process.env.REACT_APP_GEMINI_API_SUB_KEY;
+      }
+      if (process.env.REACT_APP_GEMINI_API_THIRD_KEY && process.env.REACT_APP_GEMINI_API_THIRD_KEY !== 'YOUR_GEMINI_API_THIRD_KEY') {
+        this.thirdApiKey = process.env.REACT_APP_GEMINI_API_THIRD_KEY;
+      }
+    }
+    
     this.genAI = new GoogleGenerativeAI(this.mainApiKey);
     this.model = 'gemini-1.5-pro'; // Default model
     this.systemPrompt = this.getDefaultSystemPrompt();

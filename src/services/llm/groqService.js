@@ -12,8 +12,21 @@ import { Groq } from 'groq-sdk';
  */
 class GroqService {
   constructor(apiKey) {
-    this.mainApiKey = apiKey || process.env.REACT_APP_GROQ_API_MAIN_KEY;
-    this.subApiKey = process.env.REACT_APP_GROQ_API_SUB_KEY;
+    // Use a placeholder approach for API keys
+    // Users need to provide their own API keys at runtime
+    this.mainApiKey = apiKey || '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';
+    this.subApiKey = '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';
+    
+    // Check if we're in development mode and use environment variables if available
+    if (process.env.NODE_ENV === 'development') {
+      if (process.env.REACT_APP_GROQ_API_MAIN_KEY && process.env.REACT_APP_GROQ_API_MAIN_KEY !== 'YOUR_GROQ_API_KEY') {
+        this.mainApiKey = process.env.REACT_APP_GROQ_API_MAIN_KEY;
+      }
+      if (process.env.REACT_APP_GROQ_API_SUB_KEY && process.env.REACT_APP_GROQ_API_SUB_KEY !== 'YOUR_GROQ_API_SUB_KEY') {
+        this.subApiKey = process.env.REACT_APP_GROQ_API_SUB_KEY;
+      }
+    }
+    
     this.client = new Groq({
       apiKey: this.mainApiKey,
     });

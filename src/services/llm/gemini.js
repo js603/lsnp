@@ -1,10 +1,28 @@
 // Gemini API service (Secondary LLM)
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini clients with different API keys for fallback
-const genAIMain = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_MAIN_KEY);
-const genAISub = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_SUB_KEY);
-const genAIThird = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_THIRD_KEY);
+// Initialize Gemini clients with placeholder API keys
+// Users need to provide their own API keys at runtime
+let mainApiKey = 'AIzaSyDC11rqjU30OJnLjaBFOaazZV0klM5raU8';
+let subApiKey = 'AIzaSyAhscNjW8GmwKPuKzQ47blCY_bDanR-B84';
+let thirdApiKey = 'AIzaSyCH-v67rjijFO_So2mTDj_-qIy2aNJYgz0';
+
+// Check if we're in development mode and use environment variables if available
+if (process.env.NODE_ENV === 'development') {
+  if (process.env.REACT_APP_GEMINI_API_MAIN_KEY && process.env.REACT_APP_GEMINI_API_MAIN_KEY !== 'YOUR_GEMINI_API_KEY') {
+    mainApiKey = process.env.REACT_APP_GEMINI_API_MAIN_KEY;
+  }
+  if (process.env.REACT_APP_GEMINI_API_SUB_KEY && process.env.REACT_APP_GEMINI_API_SUB_KEY !== 'YOUR_GEMINI_API_SUB_KEY') {
+    subApiKey = process.env.REACT_APP_GEMINI_API_SUB_KEY;
+  }
+  if (process.env.REACT_APP_GEMINI_API_THIRD_KEY && process.env.REACT_APP_GEMINI_API_THIRD_KEY !== 'YOUR_GEMINI_API_THIRD_KEY') {
+    thirdApiKey = process.env.REACT_APP_GEMINI_API_THIRD_KEY;
+  }
+}
+
+const genAIMain = new GoogleGenerativeAI(mainApiKey);
+const genAISub = new GoogleGenerativeAI(subApiKey);
+const genAIThird = new GoogleGenerativeAI(thirdApiKey);
 
 // Default model for the game
 const DEFAULT_MODEL = 'gemini-1.5-pro';

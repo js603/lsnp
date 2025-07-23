@@ -1,14 +1,28 @@
 // Groq API service (Main LLM)
 import { Groq } from 'groq-sdk';
 
-// Initialize Groq clients with different API keys for fallback
+// Initialize Groq clients with placeholder API keys
+// Users need to provide their own API keys at runtime
+let mainApiKey = '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';
+let subApiKey = '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';
+
+// Check if we're in development mode and use environment variables if available
+if (process.env.NODE_ENV === 'development') {
+  if (process.env.REACT_APP_GROQ_API_MAIN_KEY && process.env.REACT_APP_GROQ_API_MAIN_KEY !== 'YOUR_GROQ_API_KEY') {
+    mainApiKey = process.env.REACT_APP_GROQ_API_MAIN_KEY;
+  }
+  if (process.env.REACT_APP_GROQ_API_SUB_KEY && process.env.REACT_APP_GROQ_API_SUB_KEY !== 'YOUR_GROQ_API_SUB_KEY') {
+    subApiKey = process.env.REACT_APP_GROQ_API_SUB_KEY;
+  }
+}
+
 const groqMain = new Groq({
-  apiKey: process.env.REACT_APP_GROQ_API_MAIN_KEY,
+  apiKey: mainApiKey,
   dangerouslyAllowBrowser: true,
 });
 
 const groqSub = new Groq({
-  apiKey: process.env.REACT_APP_GROQ_API_SUB_KEY,
+  apiKey: subApiKey,
   dangerouslyAllowBrowser: true,
 });
 
