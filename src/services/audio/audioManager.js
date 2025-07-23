@@ -16,11 +16,14 @@ class AudioManager {
     // Effects
     this.reverb = null;
     this.filter = null;
+    
+    // Flag to track if we've attempted initialization
+    this.initializationAttempted = false;
   }
 
-  // Initialize the audio system
-  async initialize() {
-    if (this.initialized) return;
+  // Initialize the audio system - should be called after user interaction
+  async initializeAfterUserInteraction() {
+    if (this.initialized) return true;
     
     try {
       // Start audio context (must be triggered by user interaction)
@@ -51,15 +54,41 @@ class AudioManager {
       }).connect(this.filter);
       
       this.initialized = true;
-      console.log('Audio system initialized');
+      this.initializationAttempted = true;
+      console.log('Audio system initialized successfully after user interaction');
+      return true;
     } catch (error) {
+      this.initializationAttempted = true;
       console.error('Failed to initialize audio system:', error);
+      return false;
     }
+  }
+  
+  // Legacy initialize method - now checks if initialization has been attempted
+  async initialize() {
+    if (this.initialized) return true;
+    
+    // If we've already attempted initialization, don't try again
+    // This prevents repeated errors in the console
+    if (this.initializationAttempted) {
+      console.warn('Audio initialization was previously attempted but failed. Call initializeAfterUserInteraction() after a user gesture.');
+      return false;
+    }
+    
+    console.warn('Audio initialization should happen after user interaction. Call initializeAfterUserInteraction() after a user gesture.');
+    return false;
   }
 
   // Load and play background music
   async playBgm(url, options = {}) {
-    if (!this.initialized) await this.initialize();
+    // Check if initialized and return early if not
+    if (!this.initialized) {
+      const initialized = await this.initialize();
+      if (!initialized) {
+        console.warn('Cannot play background music: Audio system not initialized');
+        return;
+      }
+    }
     
     const { 
       fadeIn = 2, 
@@ -102,7 +131,12 @@ class AudioManager {
 
   // Stop background music
   stopBgm(fadeOut = 2) {
-    if (!this.initialized || !this.bgmPlayer) return;
+    if (!this.initialized) {
+      console.warn('Cannot stop background music: Audio system not initialized');
+      return;
+    }
+    
+    if (!this.bgmPlayer) return;
     
     this.bgmPlayer.volume.rampTo(-60, fadeOut);
     setTimeout(() => {
@@ -113,7 +147,14 @@ class AudioManager {
 
   // Load and play a sound effect
   async playSfx(name, url, options = {}) {
-    if (!this.initialized) await this.initialize();
+    // Check if initialized and return early if not
+    if (!this.initialized) {
+      const initialized = await this.initialize();
+      if (!initialized) {
+        console.warn(`Cannot play sound effect ${name}: Audio system not initialized`);
+        return;
+      }
+    }
     
     const {
       volume = this.volume.sfx,
@@ -157,7 +198,12 @@ class AudioManager {
 
   // Stop a specific sound effect
   stopSfx(name) {
-    if (!this.initialized || !this.sfxPlayers[name]) return;
+    if (!this.initialized) {
+      console.warn(`Cannot stop sound effect ${name}: Audio system not initialized`);
+      return;
+    }
+    
+    if (!this.sfxPlayers[name]) return;
     
     this.sfxPlayers[name].stop();
   }
@@ -187,7 +233,10 @@ class AudioManager {
 
   // Apply atmospheric effect (e.g., for tension)
   applyAtmosphericEffect(intensity = 0.5) {
-    if (!this.initialized) return;
+    if (!this.initialized) {
+      console.warn('Cannot apply atmospheric effect: Audio system not initialized');
+      return;
+    }
     
     // Adjust filter frequency based on intensity
     const minFreq = 500;
@@ -206,7 +255,16 @@ class AudioManager {
 
   // Generate ambient sound based on scene description
   async generateAmbientSound(description) {
-    if (!this.initialized) await this.initialize();
+    // Check if initialized and return early if not
+    if (!this.initialized) {
+      const initialized = await this.initialize();
+      if (!initialized) {
+        console.warn('Cannot generate ambient sound: Audio system not initialized');
+        return {
+          stop: () => {} // Return a dummy stop function to prevent errors
+        };
+      }
+    }
     
     // Create ambient sound based on description
     const synth = new Tone.PolySynth(Tone.FMSynth).connect(this.reverb);

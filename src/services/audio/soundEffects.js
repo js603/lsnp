@@ -260,7 +260,8 @@ export const applyAtmosphericEffect = (intensity) => {
   audioManager.applyAtmosphericEffect(intensity);
 };
 
-export default {
+// Create a named object for export
+const soundEffects = {
   playSfx,
   stopSfx,
   playMusic,
@@ -269,5 +270,8 @@ export default {
   applyAtmosphericEffect,
   SOUND_EFFECTS,
   BACKGROUND_MUSIC,
-  SFX_CATEGORIES
+  SFX_CATEGORIES,
+  audioManager
 };
+
+export default soundEffects;

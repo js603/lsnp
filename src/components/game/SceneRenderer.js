@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styled from 'styled-components';
-import canvasRenderer, { useCanvasRenderer } from '../../services/canvas/canvasRenderer';
+import { useCanvasRenderer } from '../../services/canvas/canvasRenderer';
 import llmService from '../../services/llm';
 
 // Scene renderer component that integrates canvas with LLM
@@ -152,7 +152,7 @@ const generateVisualDirectives = async (sceneDescription, mood) => {
     // Parse JSON response
     try {
       // Find JSON object in response
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      const jsonMatch = response.match(/\{[\s\S]*}/);
       if (jsonMatch) {
         const directives = JSON.parse(jsonMatch[0]);
         

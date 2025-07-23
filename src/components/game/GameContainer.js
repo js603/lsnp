@@ -1,20 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 
 // Game container component - main interface for the game
 const GameContainer = ({ children, backgroundImage }) => {
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const containerRef = useRef(null);
 
   // Update dimensions on resize
   useEffect(() => {
     const updateDimensions = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
-      }
+      // We keep the function for resize handling but don't store dimensions
+      // since they're not used elsewhere in the component
     };
 
     // Initial dimensions

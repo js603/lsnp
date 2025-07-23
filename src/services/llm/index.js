@@ -116,9 +116,12 @@ export const fillPromptTemplate = (template, replacements) => {
   return filledTemplate;
 };
 
-export default {
+// Create a named object for export
+const llmService = {
   generateStoryContent,
   generateChoices,
   PROMPT_TEMPLATES,
   fillPromptTemplate,
 };
+
+export default llmService;

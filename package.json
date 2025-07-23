@@ -11,10 +11,12 @@
     "@testing-library/user-event": "^13.5.0",
     "firebase": "^10.8.0",
     "groq": "^4.1.1",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "groq-sdk": "^0.27.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "styled-components": "^6.1.8",
+    "tone": "^15.2.7",
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {

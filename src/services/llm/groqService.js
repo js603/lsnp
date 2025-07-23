@@ -1,4 +1,4 @@
-import { Groq } from 'groq';
+import { Groq } from 'groq-sdk';
 
 /**
  * Groq API Service
@@ -119,7 +119,7 @@ Do not break character or acknowledge that you are an AI. Respond only as the ga
    */
   async generateStorySegment(gameState, playerInput) {
     // Prepare the prompt based on game state and player input
-    let prompt = '';
+    let prompt;
     
     if (gameState.isNewGame) {
       // For a new game, include setup information

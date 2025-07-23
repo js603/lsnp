@@ -12,7 +12,7 @@ import soundEffects from '../../services/audio/soundEffects';
 const GameScreen = () => {
   const game = useGame();
   const [textDisplayComplete, setTextDisplayComplete] = useState(false);
-  const [sceneRenderComplete, setSceneRenderComplete] = useState(false);
+  // We're removing the sceneRenderComplete state since it's not used in the component
   const [typingSound, setTypingSound] = useState(null);
   
   // Handle text display completion
@@ -33,20 +33,19 @@ const GameScreen = () => {
   
   // Handle scene render completion
   const handleSceneRenderComplete = () => {
-    setSceneRenderComplete(true);
+    // We removed the sceneRenderComplete state since it wasn't used elsewhere
+    // This function is still needed for the SceneRenderer onRenderComplete prop
   };
   
   // Handle choice selection
   const handleChoiceSelect = (choice, index) => {
     setTextDisplayComplete(false);
-    setSceneRenderComplete(false);
     game.selectChoice(index);
   };
   
   // Reset state when scene changes
   useEffect(() => {
     setTextDisplayComplete(false);
-    setSceneRenderComplete(false);
     
     // Play typing sound
     if (game.currentScene) {
@@ -60,7 +59,7 @@ const GameScreen = () => {
         soundEffects.stopSfx('UI_TEXT_TYPING');
       }
     };
-  }, [game.currentScene]);
+  }, [game.currentScene, typingSound]);
   
   // If no current scene, show loading
   if (!game.currentScene) {

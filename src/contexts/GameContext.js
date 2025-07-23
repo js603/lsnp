@@ -197,10 +197,11 @@ export const GameProvider = ({ children }) => {
           }
         }
         
-        // Initialize audio
-        await soundEffects.audioManager.initialize();
+        // Note: Audio initialization is now deferred until user interaction
+        // We'll initialize it in TitleScreen.js when a button is clicked
         
-        // Set volume from settings
+        // Still set volume settings so they're ready when audio is initialized
+        // These won't cause errors even if audio isn't initialized yet
         soundEffects.audioManager.setMasterVolume(state.settings.volume.master * 20 - 20); // Convert 0-1 to -20-0 dB
         soundEffects.audioManager.setBgmVolume(state.settings.volume.bgm * 20 - 20);
         soundEffects.audioManager.setSfxVolume(state.settings.volume.sfx * 20 - 20);

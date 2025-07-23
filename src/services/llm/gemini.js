@@ -1,8 +1,10 @@
 // Gemini API service (Secondary LLM)
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini client
-const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
+// Initialize Gemini clients with different API keys for fallback
+const genAIMain = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_MAIN_KEY);
+const genAISub = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_SUB_KEY);
+const genAIThird = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_THIRD_KEY);
 
 // Default model for the game
 const DEFAULT_MODEL = 'gemini-1.5-pro';
@@ -21,32 +23,53 @@ export const generateStoryContent = async (
   temperature = 0.7,
   maxTokens = 1024
 ) => {
-  try {
-    const geminiModel = genAI.getGenerativeModel({ model: model });
-    
-    const result = await geminiModel.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: `You are a creative storyteller for a sound novel mystery game called "Night of Pigeonweed". Create atmospheric, suspenseful narrative with a focus on mystery and psychological tension. The story takes place in an isolated setting.
+  // Helper function to create content with a specific client
+  const createContent = async (client, clientName) => {
+    try {
+      const geminiModel = client.getGenerativeModel({ model: model });
+      
+      const result = await geminiModel.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: `You are a creative storyteller for a sound novel mystery game called "Night of Pigeonweed". Create atmospheric, suspenseful narrative with a focus on mystery and psychological tension. The story takes place in an isolated setting.
 
 ${prompt}`
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        temperature: temperature,
-        maxOutputTokens: maxTokens,
-      },
-    });
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: temperature,
+          maxOutputTokens: maxTokens,
+        },
+      });
 
-    return result.response.text();
-  } catch (error) {
-    console.error('Error generating content with Gemini:', error);
-    throw error;
+      return result.response.text();
+    } catch (error) {
+      console.error(`Error generating content with Gemini ${clientName}:`, error);
+      throw error;
+    }
+  };
+
+  // Try main client first, then fall back to sub client, then to third client
+  try {
+    return await createContent(genAIMain, 'MAIN');
+  } catch (mainError) {
+    console.warn('Gemini MAIN API failed, falling back to SUB API:', mainError);
+    try {
+      return await createContent(genAISub, 'SUB');
+    } catch (subError) {
+      console.warn('Gemini SUB API failed, falling back to THIRD API:', subError);
+      try {
+        return await createContent(genAIThird, 'THIRD');
+      } catch (thirdError) {
+        console.error('All Gemini APIs failed:', thirdError);
+        throw new Error('Failed to generate content with any available Gemini API');
+      }
+    }
   }
 };
 
@@ -60,10 +83,12 @@ export const generateChoices = async (
   currentContext,
   numChoices = 3
 ) => {
-  try {
-    const geminiModel = genAI.getGenerativeModel({ model: DEFAULT_MODEL });
-    
-    const prompt = `You are generating player choices for a sound novel mystery game. Create first-person internal thoughts that represent meaningful decision points.
+  // Helper function to create choices with a specific client
+  const createChoices = async (client, clientName) => {
+    try {
+      const geminiModel = client.getGenerativeModel({ model: DEFAULT_MODEL });
+      
+      const prompt = `You are generating player choices for a sound novel mystery game. Create first-person internal thoughts that represent meaningful decision points.
 
 Based on the following story context, generate ${numChoices} different choices for the player. Each choice should be a first-person thought or consideration (e.g., "Should I open the door?", "Maybe I should hide and wait?"). Make the choices meaningful and divergent, leading to different possible story paths.
 
@@ -71,32 +96,54 @@ Context: ${currentContext}
 
 Choices:`;
 
-    const result = await geminiModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.8,
-        maxOutputTokens: 256,
-      },
-    });
+      const result = await geminiModel.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 256,
+        },
+      });
 
-    const content = result.response.text();
-    
-    // Parse the choices from the response
-    const choices = content
-      .split('\n')
-      .filter(line => line.trim().length > 0)
-      .map(line => line.replace(/^\d+\.\s*/, '').trim()) // Remove numbering
-      .filter(line => line.length > 0)
-      .slice(0, numChoices);
-    
-    return choices.length > 0 ? choices : ['Continue...'];
-  } catch (error) {
-    console.error('Error generating choices with Gemini:', error);
-    return ['Continue...'];
+      const content = result.response.text();
+      
+      // Parse the choices from the response
+      const choices = content
+        .split('\n')
+        .filter(line => line.trim().length > 0)
+        .map(line => line.replace(/^\d+\.\s*/, '').trim()) // Remove numbering
+        .filter(line => line.length > 0)
+        .slice(0, numChoices);
+      
+      return choices.length > 0 ? choices : ['Continue...'];
+    } catch (error) {
+      console.error(`Error generating choices with Gemini ${clientName}:`, error);
+      throw error;
+    }
+  };
+
+  // Try main client first, then fall back to sub client, then to third client
+  try {
+    return await createChoices(genAIMain, 'MAIN');
+  } catch (mainError) {
+    console.warn('Gemini MAIN API failed for choices, falling back to SUB API:', mainError);
+    try {
+      return await createChoices(genAISub, 'SUB');
+    } catch (subError) {
+      console.warn('Gemini SUB API failed for choices, falling back to THIRD API:', subError);
+      try {
+        return await createChoices(genAIThird, 'THIRD');
+      } catch (thirdError) {
+        console.error('All Gemini APIs failed for choices:', thirdError);
+        return ['Continue...'];  // Default fallback if all APIs fail
+      }
+    }
   }
 };
 
-export default {
+// Create a named object for export
+const geminiService = {
   generateStoryContent,
   generateChoices,
 };
+
+export default geminiService;

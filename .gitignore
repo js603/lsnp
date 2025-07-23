@@ -18,8 +18,11 @@
 .env.test.local
 .env.production.local
 .env.example
+.env
 .idea
+.junie
 
+*.md
 
 npm-debug.log*
 yarn-debug.log*

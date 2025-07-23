@@ -79,8 +79,14 @@ src/
    REACT_APP_FIREBASE_APP_ID=your-app-id
    REACT_APP_FIREBASE_MEASUREMENT_ID=your-measurement-id
    
-   REACT_APP_GROQ_API_KEY=your-groq-api-key
-   REACT_APP_GEMINI_API_KEY=your-gemini-api-key
+   # Groq API (Main LLM)
+   REACT_APP_GROQ_API_MAIN_KEY=your-groq-api-main-key
+   REACT_APP_GROQ_API_SUB_KEY=your-groq-api-sub-key
+   
+   # Google Generative AI API (Secondary LLM)
+   REACT_APP_GEMINI_API_MAIN_KEY=your-gemini-api-main-key
+   REACT_APP_GEMINI_API_SUB_KEY=your-gemini-api-sub-key
+   REACT_APP_GEMINI_API_THIRD_KEY=your-gemini-api-third-key
    ```
 
 4. Start the development server:

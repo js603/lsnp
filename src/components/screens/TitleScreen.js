@@ -16,33 +16,55 @@ const TitleScreen = () => {
     const savedGame = localStorage.getItem('pigeonweed_save');
     setShowContinue(!!savedGame);
     
-    // Play title music if not already playing
-    if (game.currentBgm !== 'MAIN_THEME') {
-      soundEffects.playMusic('MAIN_THEME', { volume: -12 });
-    }
-    
-    // Apply subtle atmospheric effect
-    soundEffects.applyAtmosphericEffect(0.3);
+    // Note: We no longer try to play music or apply effects here
+    // Audio will be initialized on user interaction (button click)
     
     // Clean up
     return () => {
-      soundEffects.applyAtmosphericEffect(0);
+      // No need to clean up audio effects since they weren't applied
     };
   }, [game.currentBgm]);
   
+  // Helper function to initialize audio system
+  const initializeAudio = async () => {
+    try {
+      // Initialize audio system after user interaction
+      await soundEffects.audioManager.initializeAfterUserInteraction();
+      
+      // Play title music if not already playing
+      if (game.currentBgm !== 'MAIN_THEME') {
+        soundEffects.playMusic('MAIN_THEME', { volume: -12 });
+      }
+      
+      // Apply subtle atmospheric effect
+      soundEffects.applyAtmosphericEffect(0.3);
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to initialize audio:', error);
+      return false;
+    }
+  };
+  
   // Handle start new game
-  const handleStartNewGame = () => {
+  const handleStartNewGame = async () => {
     if (!nameInput.trim()) {
       setShowNameInput(true);
       return;
     }
+    
+    // Initialize audio on user interaction
+    await initializeAudio();
     
     game.setPlayerName(nameInput);
     game.startNewGame();
   };
   
   // Handle continue game
-  const handleContinueGame = () => {
+  const handleContinueGame = async () => {
+    // Initialize audio on user interaction
+    await initializeAudio();
+    
     game.setCurrentScreen('game');
     soundEffects.playSfx('UI_CLICK');
   };
@@ -53,9 +75,12 @@ const TitleScreen = () => {
   };
   
   // Handle name input submit
-  const handleNameInputSubmit = (e) => {
+  const handleNameInputSubmit = async (e) => {
     e.preventDefault();
     if (nameInput.trim()) {
+      // Initialize audio on user interaction
+      await initializeAudio();
+      
       game.setPlayerName(nameInput);
       handleStartNewGame();
     }
@@ -86,9 +111,21 @@ const TitleScreen = () => {
             {showContinue && (
               <MenuButton onClick={handleContinueGame}>Continue</MenuButton>
             )}
-            <MenuButton onClick={() => game.setCurrentScreen('auth')}>Login / Register</MenuButton>
-            <MenuButton onClick={() => game.setCurrentScreen('settings')}>Settings</MenuButton>
-            <MenuButton onClick={() => game.setCurrentScreen('credits')}>Credits</MenuButton>
+            <MenuButton onClick={async () => {
+              await initializeAudio();
+              soundEffects.playSfx('UI_CLICK');
+              game.setCurrentScreen('auth');
+            }}>Login / Register</MenuButton>
+            <MenuButton onClick={async () => {
+              await initializeAudio();
+              soundEffects.playSfx('UI_CLICK');
+              game.setCurrentScreen('settings');
+            }}>Settings</MenuButton>
+            <MenuButton onClick={async () => {
+              await initializeAudio();
+              soundEffects.playSfx('UI_CLICK');
+              game.setCurrentScreen('credits');
+            }}>Credits</MenuButton>
           </MenuContainer>
         )}
         

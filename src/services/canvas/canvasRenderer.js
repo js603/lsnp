@@ -1,5 +1,5 @@
 // Canvas rendering service for dynamic graphics
-import { useRef, useEffect } from 'react';
+import { useEffect } from 'react';
 
 // Canvas rendering class
 class CanvasRenderer {
@@ -99,23 +99,21 @@ class CanvasRenderer {
                          description.toLowerCase().includes('interior');
         
         // Set base colors based on mood and time
-        let skyColor, groundColor, middleColor, accentColor;
+        let skyColor, groundColor, middleColor;
         
         if (isNight) {
           skyColor = '#0a0a1a';
           groundColor = '#0f0f1f';
           middleColor = '#141428';
-          accentColor = '#e0e0ff';
         } else {
           skyColor = '#4a6ea5';
           groundColor = '#2c4c2c';
           middleColor = '#3a5a3a';
-          accentColor = '#f0f0f0';
         }
         
         // Override with palette if provided
-        if (palette.length >= 4) {
-          [skyColor, groundColor, middleColor, accentColor] = palette;
+        if (palette.length >= 3) {
+          [skyColor, groundColor, middleColor] = palette;
         }
         
         // Adjust based on mood
