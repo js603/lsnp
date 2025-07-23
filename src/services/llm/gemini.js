@@ -1,13 +1,13 @@
 // Gemini API service (Secondary LLM)
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini clients with placeholder API keys
-// Users need to provide their own API keys at runtime
+// 자리 표시 자 API 키로 Gemini 클라이언트를 초기화합니다
+// 사용자는 런타임에 자체 API 키를 제공해야합니다.
 let mainApiKey = 'AIzaSyDC11rqjU30OJnLjaBFOaazZV0klM5raU8';
 let subApiKey = 'AIzaSyAhscNjW8GmwKPuKzQ47blCY_bDanR-B84';
 let thirdApiKey = 'AIzaSyCH-v67rjijFO_So2mTDj_-qIy2aNJYgz0';
 
-// Check if we're in development mode and use environment variables if available
+// 우리가 개발 모드에 있는지 확인하고 가능한 경우 환경 변수를 사용하십시오.
 if (process.env.NODE_ENV === 'development') {
   if (process.env.REACT_APP_GEMINI_API_MAIN_KEY && process.env.REACT_APP_GEMINI_API_MAIN_KEY !== 'YOUR_GEMINI_API_KEY') {
     mainApiKey = process.env.REACT_APP_GEMINI_API_MAIN_KEY;
