@@ -87,7 +87,7 @@ const TitleScreen = () => {
   };
   
   return (
-    <GameContainer backgroundImage="/assets/images/title_bg.jpg">
+    <GameContainer>
       <TitleContainer>
         <Title>비둘기밥의 밤</Title>
         <Subtitle>Night of Pigeonweed</Subtitle>
