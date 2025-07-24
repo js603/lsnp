@@ -142,14 +142,14 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: ${e=>e.backgroundImage?`url(${e.backgroundImage})`:"none"};
+  background-image: ${e=>e.$backgroundImage?`url(${e.$backgroundImage})`:"none"};
   background-size: cover;
   background-position: center;
   filter: brightness(0.7); /* Darken the background for better text readability */
   transition: background-image 1s ease-in-out;
   
   /* Fallback background if no image is provided */
-  background-color: ${e=>e.backgroundImage?"transparent":"#121212"};
+  background-color: ${e=>e.$backgroundImage?"transparent":"#121212"};
 `,d=a.Ay.div`
   position: relative;
   z-index: 1;
@@ -161,5 +161,5 @@
   align-items: center;
   padding: 2rem;
   box-sizing: border-box;
-`,l=e=>{let{children:r,backgroundImage:t}=e;const a=(0,o.useRef)(null);return(0,o.useEffect)(()=>{const e=()=>{};return window.addEventListener("resize",e),()=>{window.removeEventListener("resize",e)}},[]),(0,n.jsxs)(i,{ref:a,children:[(0,n.jsx)(s,{backgroundImage:t}),(0,n.jsx)(d,{children:r})]})}}}]);
-//# sourceMappingURL=225.46a25d61.chunk.js.map
+`,l=e=>{let{children:r,backgroundImage:t}=e;const a=(0,o.useRef)(null);return(0,o.useEffect)(()=>{const e=()=>{};return window.addEventListener("resize",e),()=>{window.removeEventListener("resize",e)}},[]),(0,n.jsxs)(i,{ref:a,children:[(0,n.jsx)(s,{$backgroundImage:t}),(0,n.jsx)(d,{children:r})]})}}}]);
+//# sourceMappingURL=225.0674a30b.chunk.js.map
