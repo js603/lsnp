@@ -44,6 +44,7 @@ function App() {
   const [casePrompt, setCasePrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState('');
+  const [difficulty, setDifficulty] = useState('normal'); // 'easy', 'normal', 'hard'
 
   // --- CHAT STATE ---
   const [chatInput, setChatInput] = useState('');
@@ -137,6 +138,14 @@ function App() {
           ...doc.data()
         });
       });
+      
+      // Sort cases by creation date (newest first)
+      cases.sort((a, b) => {
+        // If createdAt doesn't exist, use 0 as default (oldest)
+        const dateA = a.createdAt || 0;
+        const dateB = b.createdAt || 0;
+        return dateB - dateA; // Descending order (newest first)
+      });
 
       setCaseList(cases);
     } catch (error) {
@@ -158,7 +167,36 @@ function App() {
         const newGameState = JSON.parse(JSON.stringify(defaultGameState));
         // Add check to ensure characters array exists and has elements
         if (caseData.characters && caseData.characters.length > 0) {
-          newGameState.activeNPC = caseData.characters[0].id;
+          // Character selection based on difficulty
+          const difficulty = caseData.difficulty || 'normal';
+          
+          if (difficulty === 'easy') {
+            // For easy difficulty, select the character most likely to provide useful information
+            // (excluding the murderer if possible)
+            const groundTruth = caseData.groundTruth || {};
+            const murdererId = groundTruth.murdererId;
+            
+            // Try to find a character with the most evidence or knowledge
+            const charactersWithEvidence = caseData.characters.map(char => {
+              const evidenceCount = (caseData.evidence || []).filter(e => e.characterId === char.id).length;
+              return { ...char, evidenceCount };
+            });
+            
+            // Sort by evidence count (descending) and exclude murderer if possible
+            charactersWithEvidence.sort((a, b) => {
+              // If one is the murderer and the other isn't, prioritize the non-murderer
+              if (a.id === murdererId && b.id !== murdererId) return 1;
+              if (a.id !== murdererId && b.id === murdererId) return -1;
+              // Otherwise sort by evidence count
+              return b.evidenceCount - a.evidenceCount;
+            });
+            
+            // Select the first character after sorting
+            newGameState.activeNPC = charactersWithEvidence[0].id;
+          } else {
+            // For normal and hard difficulty, just select the first character
+            newGameState.activeNPC = caseData.characters[0].id;
+          }
         } else {
           console.warn("No characters found in case data");
           // Set a default or placeholder value if no characters exist
@@ -200,6 +238,8 @@ function App() {
         title: { type: "STRING" },
         summary: { type: "STRING" },
         briefing: { type: "STRING" },
+        difficulty: { type: "STRING", enum: ["easy", "normal", "hard"] },
+        createdAt: { type: "NUMBER" }, // Timestamp for sorting
         groundTruth: {
           type: "OBJECT",
           properties: {
@@ -331,6 +371,10 @@ function App() {
           }
 
           // If we get here, the case data is valid
+          // Add difficulty and timestamp to the case data
+          newCase.difficulty = difficulty;
+          newCase.createdAt = Date.now();
+          
           const caseId = crypto.randomUUID();
           await setDoc(doc(db, "artifacts", appId, "cases", caseId), newCase);
 
@@ -548,6 +592,7 @@ function App() {
 당신은 "${activeCaseData.title}" 사건의 등장인물 "${activeNPC.name}"입니다.
 당신의 역할: ${activeNPC.role}
 당신의 성격: ${activeNPC.personality}
+당신의 배경: ${activeNPC.intro || ''}
 `;
       
       // Get recent chat history for context (last 10 messages)
@@ -631,21 +676,25 @@ ${activeCaseData.summary}
       return;
     }
 
-    // Generate a character-specific greeting based on personality
+    // Generate a character-specific greeting based on personality and difficulty
     let greeting = "";
+    
+    // Get the difficulty level from case data
+    const difficulty = caseData.difficulty || 'normal';
     
     // Use the character's personality to create a personalized greeting
     if (activeNPC.personality) {
       const personality = activeNPC.personality.toLowerCase();
       
+      // Base greeting based on personality
       if (personality.includes("냉소적") || personality.includes("차가운") || personality.includes("무뚝뚝")) {
         greeting = `${activeNPC.name}입니다. 무슨 일로 찾아오셨죠?`;
       } else if (personality.includes("친절") || personality.includes("상냥") || personality.includes("다정")) {
-        greeting = `안녕하세요! ${activeNPC.name}입니다. 무엇을 도와드릴까요?`;
+        greeting = `안녕하세요! ${activeNPC.name}입니다.`;
       } else if (personality.includes("긴장") || personality.includes("불안") || personality.includes("소심")) {
         greeting = `아, 안녕하세요... ${activeNPC.name}이라고 합니다. 무슨 일이신가요?`;
       } else if (personality.includes("거만") || personality.includes("오만") || personality.includes("자신감")) {
-        greeting = `${activeNPC.name}입니다. 당신이 그 유명한 탐정이군요. 어떤 질문이 있으신가요?`;
+        greeting = `${activeNPC.name}입니다. 당신이 그 유명한 탐정이군요.`;
       } else if (personality.includes("의심") || personality.includes("경계") || personality.includes("조심")) {
         greeting = `${activeNPC.name}입니다. 왜 저를 찾아오셨죠?`;
       } else if (personality.includes("다혈질") || personality.includes("화끈") || personality.includes("직설적")) {
@@ -653,14 +702,42 @@ ${activeCaseData.summary}
       } else if (personality.includes("지적") || personality.includes("논리적") || personality.includes("분석적")) {
         greeting = `${activeNPC.name}입니다. 어떤 정보가 필요하신지 말씀해주시겠어요?`;
       } else if (personality.includes("유머") || personality.includes("쾌활") || personality.includes("명랑")) {
-        greeting = `안녕하세요! ${activeNPC.name}입니다. 오늘 기분이 어떠신가요? 무엇을 도와드릴까요?`;
+        greeting = `안녕하세요! ${activeNPC.name}입니다. 오늘 기분이 어떠신가요?`;
       } else {
         // Default greeting with character's name
-        greeting = `${activeNPC.name}입니다. 무엇을 도와드릴까요?`;
+        greeting = `${activeNPC.name}입니다.`;
+      }
+      
+      // Add additional information based on difficulty
+      if (difficulty === 'easy') {
+        // For easy difficulty, provide more information about the character
+        const groundTruth = caseData.groundTruth || {};
+        const isMurderer = activeNPC.id === groundTruth.murdererId;
+        
+        // Add role information
+        if (activeNPC.role) {
+          greeting += ` 저는 ${activeNPC.role}입니다.`;
+        }
+        
+        // Add a hint about what the character knows
+        const characterEvidence = (caseData.evidence || []).filter(e => e.characterId === activeNPC.id);
+        if (characterEvidence.length > 0) {
+          if (!isMurderer) {
+            greeting += ` 사건에 대해 알고 있는 정보가 있습니다. 무엇이든 물어보세요.`;
+          } else {
+            greeting += ` 사건 당일에 있었던 일에 대해 물어보실 수 있습니다.`;
+          }
+        }
+      } else if (difficulty === 'hard') {
+        // For hard difficulty, provide minimal information
+        greeting += ` 무슨 일이신가요?`;
+      } else {
+        // For normal difficulty, provide standard greeting
+        greeting += ` 어떤 일로 오셨나요?`;
       }
     } else {
       // Fallback if no personality is defined
-      greeting = `${activeNPC.name}입니다. 무엇을 도와드릴까요?`;
+      greeting = `${activeNPC.name}입니다. 어떤 일로 오셨나요?`;
     }
 
     // Initialize chat with the character-specific greeting
@@ -992,6 +1069,46 @@ ${connectionsText}
                 className="w-full bg-gray-700 rounded-md p-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows="3">
           </textarea>
+            
+            <div className="mt-4 mb-4">
+              <p className="text-gray-300 mb-2">난이도 설정:</p>
+              <div className="flex space-x-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="difficulty"
+                    value="easy"
+                    checked={difficulty === 'easy'}
+                    onChange={() => setDifficulty('easy')}
+                    className="mr-2"
+                  />
+                  <span className="text-green-400">쉬움</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="difficulty"
+                    value="normal"
+                    checked={difficulty === 'normal'}
+                    onChange={() => setDifficulty('normal')}
+                    className="mr-2"
+                  />
+                  <span className="text-yellow-400">보통</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="difficulty"
+                    value="hard"
+                    checked={difficulty === 'hard'}
+                    onChange={() => setDifficulty('hard')}
+                    className="mr-2"
+                  />
+                  <span className="text-red-400">어려움</span>
+                </label>
+              </div>
+            </div>
+            
             <button
                 onClick={generateAndSaveCase}
                 disabled={isGenerating}
@@ -1280,21 +1397,25 @@ ${connectionsText}
                             return;
                           }
                           
-                          // Generate a character-specific greeting based on personality
+                          // Generate a character-specific greeting based on personality and difficulty
                           let greeting = "";
+                          
+                          // Get the difficulty level from case data
+                          const difficulty = activeCaseData.difficulty || 'normal';
                           
                           // Use the character's personality to create a personalized greeting
                           if (selectedCharacter.personality) {
                             const personality = selectedCharacter.personality.toLowerCase();
                             
+                            // Base greeting based on personality
                             if (personality.includes("냉소적") || personality.includes("차가운") || personality.includes("무뚝뚝")) {
                               greeting = `${selectedCharacter.name}입니다. 무슨 일로 찾아오셨죠?`;
                             } else if (personality.includes("친절") || personality.includes("상냥") || personality.includes("다정")) {
-                              greeting = `안녕하세요! ${selectedCharacter.name}입니다. 무엇을 도와드릴까요?`;
+                              greeting = `안녕하세요! ${selectedCharacter.name}입니다.`;
                             } else if (personality.includes("긴장") || personality.includes("불안") || personality.includes("소심")) {
                               greeting = `아, 안녕하세요... ${selectedCharacter.name}이라고 합니다. 무슨 일이신가요?`;
                             } else if (personality.includes("거만") || personality.includes("오만") || personality.includes("자신감")) {
-                              greeting = `${selectedCharacter.name}입니다. 당신이 그 유명한 탐정이군요. 어떤 질문이 있으신가요?`;
+                              greeting = `${selectedCharacter.name}입니다. 당신이 그 유명한 탐정이군요.`;
                             } else if (personality.includes("의심") || personality.includes("경계") || personality.includes("조심")) {
                               greeting = `${selectedCharacter.name}입니다. 왜 저를 찾아오셨죠?`;
                             } else if (personality.includes("다혈질") || personality.includes("화끈") || personality.includes("직설적")) {
@@ -1302,14 +1423,42 @@ ${connectionsText}
                             } else if (personality.includes("지적") || personality.includes("논리적") || personality.includes("분석적")) {
                               greeting = `${selectedCharacter.name}입니다. 어떤 정보가 필요하신지 말씀해주시겠어요?`;
                             } else if (personality.includes("유머") || personality.includes("쾌활") || personality.includes("명랑")) {
-                              greeting = `안녕하세요! ${selectedCharacter.name}입니다. 오늘 기분이 어떠신가요? 무엇을 도와드릴까요?`;
+                              greeting = `안녕하세요! ${selectedCharacter.name}입니다. 오늘 기분이 어떠신가요?`;
                             } else {
                               // Default greeting with character's name
-                              greeting = `${selectedCharacter.name}입니다. 무엇을 도와드릴까요?`;
+                              greeting = `${selectedCharacter.name}입니다.`;
+                            }
+                            
+                            // Add additional information based on difficulty
+                            if (difficulty === 'easy') {
+                              // For easy difficulty, provide more information about the character
+                              const groundTruth = activeCaseData.groundTruth || {};
+                              const isMurderer = selectedCharacter.id === groundTruth.murdererId;
+                              
+                              // Add role information
+                              if (selectedCharacter.role) {
+                                greeting += ` 저는 ${selectedCharacter.role}입니다.`;
+                              }
+                              
+                              // Add a hint about what the character knows
+                              const characterEvidence = (activeCaseData.evidence || []).filter(e => e.characterId === selectedCharacter.id);
+                              if (characterEvidence.length > 0) {
+                                if (!isMurderer) {
+                                  greeting += ` 사건에 대해 알고 있는 정보가 있습니다. 무엇이든 물어보세요.`;
+                                } else {
+                                  greeting += ` 사건 당일에 있었던 일에 대해 물어보실 수 있습니다.`;
+                                }
+                              }
+                            } else if (difficulty === 'hard') {
+                              // For hard difficulty, provide minimal information
+                              greeting += ` 무슨 일이신가요?`;
+                            } else {
+                              // For normal difficulty, provide standard greeting
+                              greeting += ` 어떤 일로 오셨나요?`;
                             }
                           } else {
                             // Fallback if no personality is defined
-                            greeting = `${selectedCharacter.name}입니다. 무엇을 도와드릴까요?`;
+                            greeting = `${selectedCharacter.name}입니다. 어떤 일로 오셨나요?`;
                           }
                           
                           // Initialize chat with the character-specific greeting
