@@ -588,11 +588,14 @@ function App() {
       setChatLog([...updatedChatLog, typingMessage]);
       
       // Prepare context for the NPC response
+      // Use the same character information that's displayed in the UI
       const characterContext = `
 당신은 "${activeCaseData.title}" 사건의 등장인물 "${activeNPC.name}"입니다.
 당신의 역할: ${activeNPC.role}
 당신의 성격: ${activeNPC.personality}
 당신의 배경: ${activeNPC.intro || ''}
+
+중요: 당신은 게임 내에서 실제로 구현된 기능만 언급해야 합니다. 혈흔 감식, 경찰에게 증거 제출, 법의학적 분석 등 게임에서 지원하지 않는 기능을 언급하지 마세요. 당신이 할 수 있는 것은 대화를 통한 정보 제공뿐입니다.
 `;
       
       // Get recent chat history for context (last 10 messages)
@@ -933,17 +936,44 @@ ${connectionsText}
     
     // Call API to generate verdict
     callGeminiAPI(payload).then(verdict => {
+      // Check if the verdict indicates a successful accusation
+      const isSuccessful = verdict.includes("유죄") || verdict.includes("범인이 맞습니다") || 
+                          verdict.includes("범인으로 인정") || verdict.includes("범인이 분명");
+      
       // Update game state to mark case as solved
       const updatedGameState = {
         ...gameState,
         caseSolved: true,
-        accusedSuspect: suspectName
+        accusedSuspect: suspectName,
+        accusationSuccessful: isSuccessful
       };
       setGameState(updatedGameState);
       saveGameState(updatedGameState);
       
-      // Display verdict
+      // Generate ending content based on verdict
+      let endingContent = '';
+      
+      if (isSuccessful) {
+        // Successful ending
+        endingContent = `
+          <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-green-400 mb-2">사건 해결!</h1>
+            <p class="text-xl text-gray-300">축하합니다! 성공적으로 사건을 해결했습니다.</p>
+          </div>
+        `;
+      } else {
+        // Failed ending
+        endingContent = `
+          <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-red-400 mb-2">사건 미해결</h1>
+            <p class="text-xl text-gray-300">아쉽게도 범인을 찾지 못했습니다. 다시 도전해보세요.</p>
+          </div>
+        `;
+      }
+      
+      // Display verdict with ending
       setReportContent(`
+        ${endingContent}
         <h2 class="text-2xl font-bold text-red-400 mb-4">최종 판결</h2>
         <div class="prose prose-invert max-w-none">
           <p class="font-bold">피고발인: ${suspectName}</p>
@@ -951,6 +981,16 @@ ${connectionsText}
             ${verdict.replace(/\n/g, '<br>')}
           </div>
           <p class="text-sm text-gray-400 mt-4">이 판결은 탐정이 제출한 증거와 추리를 바탕으로 내려졌습니다.</p>
+          ${isSuccessful ? `
+          <div class="mt-6 text-center">
+            <button 
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+              onclick="window.location.href = '#';"
+            >
+              메인 메뉴로 돌아가기
+            </button>
+          </div>
+          ` : ''}
         </div>
       `);
     }).catch(error => {
@@ -1575,103 +1615,172 @@ ${connectionsText}
                 )}
               </div>
               <div className={`tab-content h-full w-full ${activeTab === 'graph' ? '' : 'hidden'}`}>
-                <div className="absolute top-2 left-2 z-10 flex gap-2">
-                  <button
-                      className={`${gameState.knowledgeGraph.isConnectMode ? 'bg-blue-600' : 'bg-gray-600 hover:bg-gray-500'} text-white font-bold py-2 px-3 rounded transition-colors`}
-                      title={gameState.knowledgeGraph.isConnectMode ? "연결 모드 해제" : "증거 연결 모드"}
-                      onClick={() => {
-                        const updatedGameState = {
-                          ...gameState,
-                          knowledgeGraph: {
-                            ...gameState.knowledgeGraph,
-                            isConnectMode: !gameState.knowledgeGraph.isConnectMode,
-                            firstNodeToConnect: null
-                          }
-                        };
-                        setGameState(updatedGameState);
-                        saveGameState(updatedGameState);
-                        
-                        if (!updatedGameState.knowledgeGraph.isConnectMode) {
-                          showNotification("연결 모드가 해제되었습니다.", "info");
-                        } else {
-                          showNotification("연결 모드가 활성화되었습니다. 첫 번째 증거를 선택하세요.", "info");
-                        }
-                      }}
-                  >
-                    <i className="fas fa-link"></i>
-                    {gameState.knowledgeGraph.isConnectMode && " 연결 중"}
-                  </button>
-                  {gameState.knowledgeGraph.edges.length > 0 && (
+                {/* Control panel for the knowledge graph */}
+                <div className="absolute top-2 left-2 z-10 flex flex-col gap-2">
+                  <div className="flex gap-2 mb-2">
                     <button
-                        className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-3 rounded transition-colors"
-                        title="모든 연결 삭제"
+                        className={`${gameState.knowledgeGraph.isConnectMode ? 'bg-blue-600' : 'bg-gray-600 hover:bg-gray-500'} text-white font-bold py-2 px-3 rounded transition-colors`}
+                        title={gameState.knowledgeGraph.isConnectMode ? "연결 모드 해제" : "증거 연결 모드"}
                         onClick={() => {
-                          if (window.confirm("모든 연결을 삭제하시겠습니까?")) {
-                            const updatedGameState = {
-                              ...gameState,
-                              knowledgeGraph: {
-                                ...gameState.knowledgeGraph,
-                                edges: [],
-                                isConnectMode: false,
-                                firstNodeToConnect: null
-                              }
-                            };
-                            setGameState(updatedGameState);
-                            saveGameState(updatedGameState);
-                            showNotification("모든 연결이 삭제되었습니다.", "info");
+                          const updatedGameState = {
+                            ...gameState,
+                            knowledgeGraph: {
+                              ...gameState.knowledgeGraph,
+                              isConnectMode: !gameState.knowledgeGraph.isConnectMode,
+                              firstNodeToConnect: null
+                            }
+                          };
+                          setGameState(updatedGameState);
+                          saveGameState(updatedGameState);
+                          
+                          if (!updatedGameState.knowledgeGraph.isConnectMode) {
+                            showNotification("연결 모드가 해제되었습니다.", "info");
+                          } else {
+                            showNotification("연결 모드가 활성화되었습니다. 첫 번째 증거를 선택하세요.", "info");
                           }
                         }}
                     >
-                      <i className="fas fa-trash-alt"></i> 모든 연결 삭제
+                      <i className="fas fa-link"></i>
+                      {gameState.knowledgeGraph.isConnectMode && " 연결 중"}
                     </button>
-                  )}
+                    {gameState.knowledgeGraph.edges.length > 0 && (
+                      <button
+                          className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-3 rounded transition-colors"
+                          title="모든 연결 삭제"
+                          onClick={() => {
+                            if (window.confirm("모든 연결을 삭제하시겠습니까?")) {
+                              const updatedGameState = {
+                                ...gameState,
+                                knowledgeGraph: {
+                                  ...gameState.knowledgeGraph,
+                                  edges: [],
+                                  isConnectMode: false,
+                                  firstNodeToConnect: null
+                                }
+                              };
+                              setGameState(updatedGameState);
+                              saveGameState(updatedGameState);
+                              showNotification("모든 연결이 삭제되었습니다.", "info");
+                            }
+                          }}
+                      >
+                        <i className="fas fa-trash-alt"></i> 모든 연결 삭제
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Zoom controls */}
+                  <div className="bg-gray-800 p-2 rounded-lg shadow-lg flex flex-col items-center">
+                    <button
+                      className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded mb-1 w-full"
+                      title="확대"
+                      onClick={() => {
+                        // Get the current graph container
+                        const graphContainer = document.getElementById('knowledge-graph-container');
+                        const graphContent = document.getElementById('knowledge-graph-content');
+                        
+                        // Get current scale from data attribute or default to 1
+                        const currentScale = parseFloat(graphContent.getAttribute('data-scale') || '1');
+                        const newScale = Math.min(currentScale + 0.1, 2); // Max zoom 2x
+                        
+                        // Update scale
+                        graphContent.style.transform = `scale(${newScale})`;
+                        graphContent.setAttribute('data-scale', newScale.toString());
+                        
+                        showNotification(`확대: ${Math.round(newScale * 100)}%`, "info");
+                      }}
+                    >
+                      <i className="fas fa-search-plus"></i>
+                    </button>
+                    <button
+                      className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded mb-1 w-full"
+                      title="축소"
+                      onClick={() => {
+                        // Get the current graph container
+                        const graphContainer = document.getElementById('knowledge-graph-container');
+                        const graphContent = document.getElementById('knowledge-graph-content');
+                        
+                        // Get current scale from data attribute or default to 1
+                        const currentScale = parseFloat(graphContent.getAttribute('data-scale') || '1');
+                        const newScale = Math.max(currentScale - 0.1, 0.5); // Min zoom 0.5x
+                        
+                        // Update scale
+                        graphContent.style.transform = `scale(${newScale})`;
+                        graphContent.setAttribute('data-scale', newScale.toString());
+                        
+                        showNotification(`축소: ${Math.round(newScale * 100)}%`, "info");
+                      }}
+                    >
+                      <i className="fas fa-search-minus"></i>
+                    </button>
+                    <button
+                      className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded w-full"
+                      title="원래 크기로"
+                      onClick={() => {
+                        // Get the current graph container
+                        const graphContainer = document.getElementById('knowledge-graph-container');
+                        const graphContent = document.getElementById('knowledge-graph-content');
+                        
+                        // Reset scale
+                        graphContent.style.transform = 'scale(1)';
+                        graphContent.setAttribute('data-scale', '1');
+                        
+                        showNotification("원래 크기로 복원되었습니다.", "info");
+                      }}
+                    >
+                      <i className="fas fa-sync-alt"></i>
+                    </button>
+                  </div>
                 </div>
-                <div className="h-full w-full relative overflow-auto">
-                  <svg id="knowledge-graph-svg" className="absolute top-0 left-0 w-[1000px] h-[1000px] pointer-events-none">
-                    {/* Render edges */}
-                    {gameState.knowledgeGraph.edges.map((edge, index) => {
-                      // Find the source and target nodes
-                      const sourceNode = gameState.pinnedEvidence.find(e => e.id === edge.source);
-                      const targetNode = gameState.pinnedEvidence.find(e => e.id === edge.target);
-                      
-                      // Skip if either node doesn't exist anymore
-                      if (!sourceNode || !targetNode) return null;
-                      
-                      // Calculate source and target positions
-                      // This is a simple positioning algorithm - in a real app, you'd use a proper graph layout algorithm
-                      const sourceIndex = gameState.pinnedEvidence.findIndex(e => e.id === edge.source);
-                      const targetIndex = gameState.pinnedEvidence.findIndex(e => e.id === edge.target);
-                      
-                      const sourceX = 100 + (sourceIndex % 3) * 300;
-                      const sourceY = 100 + Math.floor(sourceIndex / 3) * 200;
-                      const targetX = 100 + (targetIndex % 3) * 300;
-                      const targetY = 100 + Math.floor(targetIndex / 3) * 200;
-                      
-                      return (
-                        <g key={`edge-${index}`}>
-                          <line 
-                            x1={sourceX} 
-                            y1={sourceY} 
-                            x2={targetX} 
-                            y2={targetY} 
-                            stroke="#4B5563" 
-                            strokeWidth="2"
-                          />
-                          <text 
-                            x={(sourceX + targetX) / 2} 
-                            y={(sourceY + targetY) / 2} 
-                            fill="#9CA3AF" 
-                            textAnchor="middle" 
-                            dominantBaseline="middle"
-                            className="bg-gray-800 px-1"
-                          >
-                            {edge.relationship || "관계"}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </svg>
-                  <div className="relative w-[1000px] h-[1000px]">
+                
+                {/* Graph container with improved scrolling and zooming */}
+                <div id="knowledge-graph-container" className="h-full w-full relative overflow-auto">
+                  <div id="knowledge-graph-content" className="relative w-[1000px] h-[1000px] origin-top-left transition-transform duration-200" data-scale="1">
+                    <svg id="knowledge-graph-svg" className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                      {/* Render edges */}
+                      {gameState.knowledgeGraph.edges.map((edge, index) => {
+                        // Find the source and target nodes
+                        const sourceNode = gameState.pinnedEvidence.find(e => e.id === edge.source);
+                        const targetNode = gameState.pinnedEvidence.find(e => e.id === edge.target);
+                        
+                        // Skip if either node doesn't exist anymore
+                        if (!sourceNode || !targetNode) return null;
+                        
+                        // Calculate source and target positions
+                        // This is a simple positioning algorithm - in a real app, you'd use a proper graph layout algorithm
+                        const sourceIndex = gameState.pinnedEvidence.findIndex(e => e.id === edge.source);
+                        const targetIndex = gameState.pinnedEvidence.findIndex(e => e.id === edge.target);
+                        
+                        const sourceX = 100 + (sourceIndex % 3) * 300;
+                        const sourceY = 100 + Math.floor(sourceIndex / 3) * 200;
+                        const targetX = 100 + (targetIndex % 3) * 300;
+                        const targetY = 100 + Math.floor(targetIndex / 3) * 200;
+                        
+                        return (
+                          <g key={`edge-${index}`}>
+                            <line 
+                              x1={sourceX} 
+                              y1={sourceY} 
+                              x2={targetX} 
+                              y2={targetY} 
+                              stroke="#4B5563" 
+                              strokeWidth="2"
+                            />
+                            <text 
+                              x={(sourceX + targetX) / 2} 
+                              y={(sourceY + targetY) / 2} 
+                              fill="#9CA3AF" 
+                              textAnchor="middle" 
+                              dominantBaseline="middle"
+                              className="bg-gray-800 px-1"
+                            >
+                              {edge.relationship || "관계"}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                    
                     {gameState.pinnedEvidence.length === 0 ? (
                       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center text-gray-400">
                         <i className="fas fa-project-diagram text-4xl mb-3"></i>
