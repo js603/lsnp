@@ -25,10 +25,12 @@ function App() {
   const [isBriefingModalOpen, setIsBriefingModalOpen] = useState(false);
   const [isForensicsModalOpen, setIsForensicsModalOpen] = useState(false);
   const [isHintModalOpen, setIsHintModalOpen] = useState(false);
+  const [isCharacterInfoModalOpen, setIsCharacterInfoModalOpen] = useState(false);
   const [reportContent, setReportContent] = useState('');
   const [briefingContent, setBriefingContent] = useState('');
   const [forensicsContent, setForensicsContent] = useState('');
   const [hintContent, setHintContent] = useState('');
+  const [characterInfoContent, setCharacterInfoContent] = useState('');
   
   // --- CUSTOM PROMPT MODALS STATE ---
   const [isAccusePromptOpen, setIsAccusePromptOpen] = useState(false);
@@ -45,6 +47,60 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState('');
   const [difficulty, setDifficulty] = useState('normal'); // 'easy', 'normal', 'hard'
+  
+  // --- UI/UX SETTINGS STATE ---
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [uiTheme, setUiTheme] = useState(() => {
+    // Try to get theme from localStorage, default to 'dark'
+    const savedTheme = localStorage.getItem('uiTheme');
+    return savedTheme || 'dark';
+  });
+  
+  // Define theme options
+  const themeOptions = {
+    dark: {
+      name: '다크 테마',
+      description: '어두운 배경의 기본 테마',
+      colors: {
+        background: 'bg-gray-900',
+        card: 'bg-gray-800',
+        cardHover: 'hover:bg-gray-700',
+        accent: 'bg-blue-600',
+        accentHover: 'hover:bg-blue-700',
+        text: 'text-white',
+        textSecondary: 'text-gray-400',
+        border: 'border-gray-700'
+      }
+    },
+    light: {
+      name: '라이트 테마',
+      description: '밝은 배경의 테마',
+      colors: {
+        background: 'bg-gray-100',
+        card: 'bg-white',
+        cardHover: 'hover:bg-gray-50',
+        accent: 'bg-blue-500',
+        accentHover: 'hover:bg-blue-600',
+        text: 'text-gray-900',
+        textSecondary: 'text-gray-600',
+        border: 'border-gray-200'
+      }
+    },
+    noir: {
+      name: '느와르 테마',
+      description: '고전적인 탐정 느와르 스타일',
+      colors: {
+        background: 'bg-black',
+        card: 'bg-gray-900',
+        cardHover: 'hover:bg-gray-800',
+        accent: 'bg-red-900',
+        accentHover: 'hover:bg-red-800',
+        text: 'text-gray-300',
+        textSecondary: 'text-gray-500',
+        border: 'border-gray-800'
+      }
+    }
+  };
 
   // --- CHAT STATE ---
   const [chatInput, setChatInput] = useState('');
@@ -151,6 +207,39 @@ function App() {
     } catch (error) {
       console.error("사건 목록 로딩 실패:", error);
       showNotification("사건 목록을 불러오는데 실패했습니다.", "error");
+    }
+  };
+  
+  const deleteCase = async (caseId) => {
+    if (!db || !appId) return;
+    
+    try {
+      // Delete case document from Firestore
+      await setDoc(doc(db, "artifacts", appId, "cases", caseId), {
+        deleted: true,
+        deletedAt: new Date().getTime()
+      }, { merge: true });
+      
+      // Also delete user progress if exists
+      if (userId) {
+        try {
+          await setDoc(doc(db, "artifacts", appId, "users", userId, "progress", caseId), {
+            deleted: true,
+            deletedAt: new Date().getTime()
+          }, { merge: true });
+        } catch (error) {
+          console.error("사용자 진행 상태 삭제 실패:", error);
+          // Continue even if progress deletion fails
+        }
+      }
+      
+      // Update local case list
+      setCaseList(prevList => prevList.filter(item => item.id !== caseId));
+      
+      showNotification("사건이 삭제되었습니다.", "success");
+    } catch (error) {
+      console.error("사건 삭제 실패:", error);
+      showNotification("사건을 삭제하는데 실패했습니다.", "error");
     }
   };
 
@@ -661,6 +750,62 @@ ${activeCaseData.summary}
     }
   };
 
+  const showCharacterInfo = (characterId) => {
+    if (!activeCaseData || !activeCaseData.characters) return;
+    
+    const character = activeCaseData.characters.find(c => c.id === characterId);
+    if (!character) return;
+    
+    // Generate character info content
+    let content = `
+      <div class="space-y-4">
+        <div class="flex items-center">
+          <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white text-xl font-bold mr-4">
+            ${character.name.charAt(0)}
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold">${character.name}</h2>
+            <p class="text-gray-400">${character.role || '역할 정보 없음'}</p>
+          </div>
+        </div>
+        
+        <div class="mt-4">
+          <h3 class="text-lg font-semibold text-blue-300 mb-2">인물 정보</h3>
+          <p>${character.description || '상세 정보가 없습니다.'}</p>
+        </div>
+        
+        <div class="mt-4">
+          <h3 class="text-lg font-semibold text-blue-300 mb-2">성격</h3>
+          <p>${character.personality || '성격 정보가 없습니다.'}</p>
+        </div>
+        
+        <div class="mt-4">
+          <h3 class="text-lg font-semibold text-blue-300 mb-2">관계</h3>
+          <ul class="list-disc pl-5 space-y-1">
+            ${character.relationships ? 
+              Object.entries(character.relationships)
+                .map(([relatedId, relationship]) => {
+                  const relatedChar = activeCaseData.characters.find(c => c.id === relatedId);
+                  return relatedChar ? 
+                    `<li><span class="font-medium">${relatedChar.name}</span>: ${relationship}</li>` : '';
+                })
+                .join('') : 
+              '<li>관계 정보가 없습니다.</li>'
+            }
+          </ul>
+        </div>
+        
+        <div class="mt-4">
+          <h3 class="text-lg font-semibold text-blue-300 mb-2">알리바이</h3>
+          <p>${character.alibi || '알리바이 정보가 없습니다.'}</p>
+        </div>
+      </div>
+    `;
+    
+    setCharacterInfoContent(content);
+    setIsCharacterInfoModalOpen(true);
+  };
+
   const initPlayUI = (caseData) => {
     // Initialize UI elements for the play view
     if (!caseData || !caseData.characters || caseData.characters.length === 0) {
@@ -679,68 +824,95 @@ ${activeCaseData.summary}
       return;
     }
 
-    // Generate a character-specific greeting based on personality and difficulty
+    // Generate a character-specific greeting based on character information
     let greeting = "";
     
     // Get the difficulty level from case data
     const difficulty = caseData.difficulty || 'normal';
     
-    // Use the character's personality to create a personalized greeting
-    if (activeNPC.personality) {
-      const personality = activeNPC.personality.toLowerCase();
+    // Use the character's information to create a personalized greeting
+    if (activeNPC) {
+      // Start with character's name and role
+      greeting = `${activeNPC.name}`;
+      if (activeNPC.role) {
+        greeting += `(${activeNPC.role})`;
+      }
+      greeting += "입니다. ";
       
-      // Base greeting based on personality
-      if (personality.includes("냉소적") || personality.includes("차가운") || personality.includes("무뚝뚝")) {
-        greeting = `${activeNPC.name}입니다. 무슨 일로 찾아오셨죠?`;
-      } else if (personality.includes("친절") || personality.includes("상냥") || personality.includes("다정")) {
-        greeting = `안녕하세요! ${activeNPC.name}입니다.`;
-      } else if (personality.includes("긴장") || personality.includes("불안") || personality.includes("소심")) {
-        greeting = `아, 안녕하세요... ${activeNPC.name}이라고 합니다. 무슨 일이신가요?`;
-      } else if (personality.includes("거만") || personality.includes("오만") || personality.includes("자신감")) {
-        greeting = `${activeNPC.name}입니다. 당신이 그 유명한 탐정이군요.`;
-      } else if (personality.includes("의심") || personality.includes("경계") || personality.includes("조심")) {
-        greeting = `${activeNPC.name}입니다. 왜 저를 찾아오셨죠?`;
-      } else if (personality.includes("다혈질") || personality.includes("화끈") || personality.includes("직설적")) {
-        greeting = `${activeNPC.name}입니다. 빨리 용건이나 말씀하세요.`;
-      } else if (personality.includes("지적") || personality.includes("논리적") || personality.includes("분석적")) {
-        greeting = `${activeNPC.name}입니다. 어떤 정보가 필요하신지 말씀해주시겠어요?`;
-      } else if (personality.includes("유머") || personality.includes("쾌활") || personality.includes("명랑")) {
-        greeting = `안녕하세요! ${activeNPC.name}입니다. 오늘 기분이 어떠신가요?`;
+      // Add character description if available
+      if (activeNPC.description) {
+        greeting += activeNPC.description;
+      } else if (activeNPC.personality) {
+        // Fallback to personality-based greeting if no description
+        const personality = activeNPC.personality.toLowerCase();
+        
+        if (personality.includes("냉소적") || personality.includes("차가운") || personality.includes("무뚝뚝")) {
+          greeting += "무슨 일로 찾아오셨죠?";
+        } else if (personality.includes("친절") || personality.includes("상냥") || personality.includes("다정")) {
+          greeting += "만나서 반갑습니다. 무엇을 도와드릴까요?";
+        } else if (personality.includes("긴장") || personality.includes("불안") || personality.includes("소심")) {
+          greeting += "저... 무슨 일이신가요?";
+        } else if (personality.includes("거만") || personality.includes("오만") || personality.includes("자신감")) {
+          greeting += "당신이 그 유명한 탐정이군요. 어떤 도움이 필요하신가요?";
+        } else if (personality.includes("의심") || personality.includes("경계") || personality.includes("조심")) {
+          greeting += "왜 저를 찾아오셨죠?";
+        } else if (personality.includes("다혈질") || personality.includes("화끈") || personality.includes("직설적")) {
+          greeting += "빨리 용건이나 말씀하세요.";
+        } else if (personality.includes("지적") || personality.includes("논리적") || personality.includes("분석적")) {
+          greeting += "어떤 정보가 필요하신지 말씀해주시겠어요?";
+        } else if (personality.includes("유머") || personality.includes("쾌활") || personality.includes("명랑")) {
+          greeting += "오늘 기분이 어떠신가요? 무엇을 도와드릴까요?";
+        } else {
+          // Default greeting
+          greeting += "어떤 일로 오셨나요?";
+        }
       } else {
-        // Default greeting with character's name
-        greeting = `${activeNPC.name}입니다.`;
+        // Default if no description or personality
+        greeting += "어떤 일로 오셨나요?";
+      }
+      
+      // Add relationship information if available
+      if (activeNPC.relationships) {
+        greeting += " ";
+        
+        // Get relationships with other characters
+        const relationshipInfo = Object.entries(activeNPC.relationships)
+          .map(([relatedId, relationship]) => {
+            const relatedChar = caseData.characters.find(c => c.id === relatedId);
+            return relatedChar ? `${relatedChar.name}와(과)는 ${relationship} 관계입니다.` : '';
+          })
+          .filter(text => text) // Remove empty strings
+          .join(' ');
+          
+        if (relationshipInfo) {
+          greeting += relationshipInfo;
+        }
+      }
+      
+      // Add alibi information if available and not in hard mode
+      if (activeNPC.alibi && difficulty !== 'hard') {
+        greeting += " " + activeNPC.alibi;
       }
       
       // Add additional information based on difficulty
       if (difficulty === 'easy') {
-        // For easy difficulty, provide more information about the character
+        // For easy difficulty, provide more information about what the character knows
         const groundTruth = caseData.groundTruth || {};
         const isMurderer = activeNPC.id === groundTruth.murdererId;
-        
-        // Add role information
-        if (activeNPC.role) {
-          greeting += ` 저는 ${activeNPC.role}입니다.`;
-        }
         
         // Add a hint about what the character knows
         const characterEvidence = (caseData.evidence || []).filter(e => e.characterId === activeNPC.id);
         if (characterEvidence.length > 0) {
           if (!isMurderer) {
-            greeting += ` 사건에 대해 알고 있는 정보가 있습니다. 무엇이든 물어보세요.`;
+            greeting += " 사건에 대해 알고 있는 정보가 있습니다. 무엇이든 물어보세요.";
           } else {
-            greeting += ` 사건 당일에 있었던 일에 대해 물어보실 수 있습니다.`;
+            greeting += " 사건 당일에 있었던 일에 대해 물어보실 수 있습니다.";
           }
         }
-      } else if (difficulty === 'hard') {
-        // For hard difficulty, provide minimal information
-        greeting += ` 무슨 일이신가요?`;
-      } else {
-        // For normal difficulty, provide standard greeting
-        greeting += ` 어떤 일로 오셨나요?`;
       }
     } else {
-      // Fallback if no personality is defined
-      greeting = `${activeNPC.name}입니다. 어떤 일로 오셨나요?`;
+      // Fallback if no character is defined
+      greeting = "안녕하세요. 어떤 일로 오셨나요?";
     }
 
     // Initialize chat with the character-specific greeting
@@ -1079,6 +1251,11 @@ ${connectionsText}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg text-lg transition-transform hover:scale-105">
               <i className="fas fa-archive mr-2"></i> 사건 파일 보관실
             </button>
+            <button
+                onClick={() => setIsSettingsModalOpen(true)}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-4 rounded-lg text-lg transition-transform hover:scale-105">
+              <i className="fas fa-cog mr-2"></i> 설정
+            </button>
           </div>
           <div className="absolute bottom-4 text-xs text-gray-600">
             {userId ? `탐정 ID: ${userId}` : ''}
@@ -1165,6 +1342,10 @@ ${connectionsText}
     );
   };
 
+  // State for delete confirmation modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [caseToDelete, setCaseToDelete] = useState(null);
+
   const renderArchiveView = () => {
     if (currentView !== 'archive') return null;
 
@@ -1183,14 +1364,53 @@ ${connectionsText}
                 caseList.map(caseItem => (
                     <div
                         key={caseItem.id}
-                        className="bg-gray-700 p-4 rounded-lg mb-3 cursor-pointer hover:bg-gray-600 transition-colors"
+                        className="bg-gray-700 p-4 rounded-lg mb-3 hover:bg-gray-600 transition-colors relative group">
+                      <div 
+                        className="cursor-pointer"
                         onClick={() => playCase(caseItem.id, caseItem)}>
-                      <h3 className="font-bold text-lg text-blue-300">{caseItem.title}</h3>
-                      <p className="text-sm text-gray-400 mt-1">{caseItem.summary}</p>
+                        <h3 className="font-bold text-lg text-blue-300">{caseItem.title}</h3>
+                        <p className="text-sm text-gray-400 mt-1">{caseItem.summary}</p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCaseToDelete(caseItem);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="absolute right-4 top-4 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="사건 삭제">
+                        <i className="fas fa-trash"></i>
+                      </button>
                     </div>
                 ))
             )}
           </div>
+          
+          {/* Delete Confirmation Modal */}
+          {isDeleteModalOpen && caseToDelete && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
+                <h3 className="text-xl font-bold mb-4 text-red-400">사건 삭제 확인</h3>
+                <p className="mb-6">정말로 "{caseToDelete.title}" 사건을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600">
+                    취소
+                  </button>
+                  <button
+                    onClick={() => {
+                      deleteCase(caseToDelete.id);
+                      setIsDeleteModalOpen(false);
+                      setCaseToDelete(null);
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                    삭제
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
     );
   };
@@ -1227,6 +1447,7 @@ ${connectionsText}
                   </div>
                   <div>
                     <button 
+                      onClick={() => showCharacterInfo(gameState.activeNPC)}
                       className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-full"
                       title="인물 정보 보기">
                       <i className="fas fa-info-circle"></i>
@@ -1437,68 +1658,95 @@ ${connectionsText}
                             return;
                           }
                           
-                          // Generate a character-specific greeting based on personality and difficulty
+                          // Generate a character-specific greeting based on character information
                           let greeting = "";
                           
                           // Get the difficulty level from case data
                           const difficulty = activeCaseData.difficulty || 'normal';
                           
-                          // Use the character's personality to create a personalized greeting
-                          if (selectedCharacter.personality) {
-                            const personality = selectedCharacter.personality.toLowerCase();
+                          // Use the character's information to create a personalized greeting
+                          if (selectedCharacter) {
+                            // Start with character's name and role
+                            greeting = `${selectedCharacter.name}`;
+                            if (selectedCharacter.role) {
+                              greeting += `(${selectedCharacter.role})`;
+                            }
+                            greeting += "입니다. ";
                             
-                            // Base greeting based on personality
-                            if (personality.includes("냉소적") || personality.includes("차가운") || personality.includes("무뚝뚝")) {
-                              greeting = `${selectedCharacter.name}입니다. 무슨 일로 찾아오셨죠?`;
-                            } else if (personality.includes("친절") || personality.includes("상냥") || personality.includes("다정")) {
-                              greeting = `안녕하세요! ${selectedCharacter.name}입니다.`;
-                            } else if (personality.includes("긴장") || personality.includes("불안") || personality.includes("소심")) {
-                              greeting = `아, 안녕하세요... ${selectedCharacter.name}이라고 합니다. 무슨 일이신가요?`;
-                            } else if (personality.includes("거만") || personality.includes("오만") || personality.includes("자신감")) {
-                              greeting = `${selectedCharacter.name}입니다. 당신이 그 유명한 탐정이군요.`;
-                            } else if (personality.includes("의심") || personality.includes("경계") || personality.includes("조심")) {
-                              greeting = `${selectedCharacter.name}입니다. 왜 저를 찾아오셨죠?`;
-                            } else if (personality.includes("다혈질") || personality.includes("화끈") || personality.includes("직설적")) {
-                              greeting = `${selectedCharacter.name}입니다. 빨리 용건이나 말씀하세요.`;
-                            } else if (personality.includes("지적") || personality.includes("논리적") || personality.includes("분석적")) {
-                              greeting = `${selectedCharacter.name}입니다. 어떤 정보가 필요하신지 말씀해주시겠어요?`;
-                            } else if (personality.includes("유머") || personality.includes("쾌활") || personality.includes("명랑")) {
-                              greeting = `안녕하세요! ${selectedCharacter.name}입니다. 오늘 기분이 어떠신가요?`;
+                            // Add character description if available
+                            if (selectedCharacter.description) {
+                              greeting += selectedCharacter.description;
+                            } else if (selectedCharacter.personality) {
+                              // Fallback to personality-based greeting if no description
+                              const personality = selectedCharacter.personality.toLowerCase();
+                              
+                              if (personality.includes("냉소적") || personality.includes("차가운") || personality.includes("무뚝뚝")) {
+                                greeting += "무슨 일로 찾아오셨죠?";
+                              } else if (personality.includes("친절") || personality.includes("상냥") || personality.includes("다정")) {
+                                greeting += "만나서 반갑습니다. 무엇을 도와드릴까요?";
+                              } else if (personality.includes("긴장") || personality.includes("불안") || personality.includes("소심")) {
+                                greeting += "저... 무슨 일이신가요?";
+                              } else if (personality.includes("거만") || personality.includes("오만") || personality.includes("자신감")) {
+                                greeting += "당신이 그 유명한 탐정이군요. 어떤 도움이 필요하신가요?";
+                              } else if (personality.includes("의심") || personality.includes("경계") || personality.includes("조심")) {
+                                greeting += "왜 저를 찾아오셨죠?";
+                              } else if (personality.includes("다혈질") || personality.includes("화끈") || personality.includes("직설적")) {
+                                greeting += "빨리 용건이나 말씀하세요.";
+                              } else if (personality.includes("지적") || personality.includes("논리적") || personality.includes("분석적")) {
+                                greeting += "어떤 정보가 필요하신지 말씀해주시겠어요?";
+                              } else if (personality.includes("유머") || personality.includes("쾌활") || personality.includes("명랑")) {
+                                greeting += "오늘 기분이 어떠신가요? 무엇을 도와드릴까요?";
+                              } else {
+                                // Default greeting
+                                greeting += "어떤 일로 오셨나요?";
+                              }
                             } else {
-                              // Default greeting with character's name
-                              greeting = `${selectedCharacter.name}입니다.`;
+                              // Default if no description or personality
+                              greeting += "어떤 일로 오셨나요?";
+                            }
+                            
+                            // Add relationship information if available
+                            if (selectedCharacter.relationships) {
+                              greeting += " ";
+                              
+                              // Get relationships with other characters
+                              const relationshipInfo = Object.entries(selectedCharacter.relationships)
+                                .map(([relatedId, relationship]) => {
+                                  const relatedChar = activeCaseData.characters.find(c => c.id === relatedId);
+                                  return relatedChar ? `${relatedChar.name}와(과)는 ${relationship} 관계입니다.` : '';
+                                })
+                                .filter(text => text) // Remove empty strings
+                                .join(' ');
+                                
+                              if (relationshipInfo) {
+                                greeting += relationshipInfo;
+                              }
+                            }
+                            
+                            // Add alibi information if available and not in hard mode
+                            if (selectedCharacter.alibi && difficulty !== 'hard') {
+                              greeting += " " + selectedCharacter.alibi;
                             }
                             
                             // Add additional information based on difficulty
                             if (difficulty === 'easy') {
-                              // For easy difficulty, provide more information about the character
+                              // For easy difficulty, provide more information about what the character knows
                               const groundTruth = activeCaseData.groundTruth || {};
                               const isMurderer = selectedCharacter.id === groundTruth.murdererId;
-                              
-                              // Add role information
-                              if (selectedCharacter.role) {
-                                greeting += ` 저는 ${selectedCharacter.role}입니다.`;
-                              }
                               
                               // Add a hint about what the character knows
                               const characterEvidence = (activeCaseData.evidence || []).filter(e => e.characterId === selectedCharacter.id);
                               if (characterEvidence.length > 0) {
                                 if (!isMurderer) {
-                                  greeting += ` 사건에 대해 알고 있는 정보가 있습니다. 무엇이든 물어보세요.`;
+                                  greeting += " 사건에 대해 알고 있는 정보가 있습니다. 무엇이든 물어보세요.";
                                 } else {
-                                  greeting += ` 사건 당일에 있었던 일에 대해 물어보실 수 있습니다.`;
+                                  greeting += " 사건 당일에 있었던 일에 대해 물어보실 수 있습니다.";
                                 }
                               }
-                            } else if (difficulty === 'hard') {
-                              // For hard difficulty, provide minimal information
-                              greeting += ` 무슨 일이신가요?`;
-                            } else {
-                              // For normal difficulty, provide standard greeting
-                              greeting += ` 어떤 일로 오셨나요?`;
                             }
                           } else {
-                            // Fallback if no personality is defined
-                            greeting = `${selectedCharacter.name}입니다. 어떤 일로 오셨나요?`;
+                            // Fallback if no character is defined
+                            greeting = "안녕하세요. 어떤 일로 오셨나요?";
                           }
                           
                           // Initialize chat with the character-specific greeting
@@ -1954,6 +2202,65 @@ ${connectionsText}
                 >
                   지목
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Character Info Modal */}
+          <div className={`modal-overlay ${isCharacterInfoModalOpen ? 'active' : ''}`}>
+            <div className="modal-content">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-blue-400">인물 정보</h2>
+                <button onClick={() => setIsCharacterInfoModalOpen(false)} className="text-gray-400 hover:text-white text-2xl">&times;</button>
+              </div>
+              <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: characterInfoContent }}></div>
+            </div>
+          </div>
+          
+          {/* Settings Modal */}
+          <div className={`modal-overlay ${isSettingsModalOpen ? 'active' : ''}`}>
+            <div className="modal-content">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-purple-400">설정</h2>
+                <button onClick={() => setIsSettingsModalOpen(false)} className="text-gray-400 hover:text-white text-2xl">&times;</button>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-purple-300 mb-3">UI 테마</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {Object.entries(themeOptions).map(([themeKey, theme]) => (
+                      <div 
+                        key={themeKey}
+                        className={`p-4 rounded-lg cursor-pointer border-2 transition-all ${
+                          uiTheme === themeKey 
+                            ? `border-purple-500 ${theme.colors.card}` 
+                            : `border-gray-700 ${theme.colors.card} opacity-70 hover:opacity-100`
+                        }`}
+                        onClick={() => {
+                          setUiTheme(themeKey);
+                          localStorage.setItem('uiTheme', themeKey);
+                          showNotification(`테마가 '${theme.name}'(으)로 변경되었습니다.`, "success");
+                        }}
+                      >
+                        <div className="flex items-center mb-2">
+                          <div className={`w-4 h-4 rounded-full mr-2 ${theme.colors.accent}`}></div>
+                          <h4 className="font-medium">{theme.name}</h4>
+                        </div>
+                        <p className="text-sm text-gray-400">{theme.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t border-gray-700">
+                  <button
+                    onClick={() => setIsSettingsModalOpen(false)}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    설정 저장
+                  </button>
+                </div>
               </div>
             </div>
           </div>

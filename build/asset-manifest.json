@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/lsnp/static/css/main.a23c0182.css",
-    "main.js": "/lsnp/static/js/main.7f9fa157.js",
+    "main.js": "/lsnp/static/js/main.499f5736.js",
     "index.html": "/lsnp/index.html",
     "main.a23c0182.css.map": "/lsnp/static/css/main.a23c0182.css.map",
-    "main.7f9fa157.js.map": "/lsnp/static/js/main.7f9fa157.js.map"
+    "main.499f5736.js.map": "/lsnp/static/js/main.499f5736.js.map"
   },
   "entrypoints": [
     "static/css/main.a23c0182.css",
-    "static/js/main.7f9fa157.js"
+    "static/js/main.499f5736.js"
   ]
 }
