@@ -827,88 +827,18 @@ ${activeCaseData.summary}
     // Generate a character-specific greeting based on character information
     let greeting = "";
     
-    // Get the difficulty level from case data
-    const difficulty = caseData.difficulty || 'normal';
-    
-    // Use the character's information to create a personalized greeting
+    // Use the character's description directly as the greeting
     if (activeNPC) {
-      // Start with character's name and role
-      greeting = `${activeNPC.name}`;
-      if (activeNPC.role) {
-        greeting += `(${activeNPC.role})`;
-      }
-      greeting += "입니다. ";
-      
-      // Add character description if available
+      // If the character has a description, use it directly
       if (activeNPC.description) {
-        greeting += activeNPC.description;
-      } else if (activeNPC.personality) {
-        // Fallback to personality-based greeting if no description
-        const personality = activeNPC.personality.toLowerCase();
-        
-        if (personality.includes("냉소적") || personality.includes("차가운") || personality.includes("무뚝뚝")) {
-          greeting += "무슨 일로 찾아오셨죠?";
-        } else if (personality.includes("친절") || personality.includes("상냥") || personality.includes("다정")) {
-          greeting += "만나서 반갑습니다. 무엇을 도와드릴까요?";
-        } else if (personality.includes("긴장") || personality.includes("불안") || personality.includes("소심")) {
-          greeting += "저... 무슨 일이신가요?";
-        } else if (personality.includes("거만") || personality.includes("오만") || personality.includes("자신감")) {
-          greeting += "당신이 그 유명한 탐정이군요. 어떤 도움이 필요하신가요?";
-        } else if (personality.includes("의심") || personality.includes("경계") || personality.includes("조심")) {
-          greeting += "왜 저를 찾아오셨죠?";
-        } else if (personality.includes("다혈질") || personality.includes("화끈") || personality.includes("직설적")) {
-          greeting += "빨리 용건이나 말씀하세요.";
-        } else if (personality.includes("지적") || personality.includes("논리적") || personality.includes("분석적")) {
-          greeting += "어떤 정보가 필요하신지 말씀해주시겠어요?";
-        } else if (personality.includes("유머") || personality.includes("쾌활") || personality.includes("명랑")) {
-          greeting += "오늘 기분이 어떠신가요? 무엇을 도와드릴까요?";
-        } else {
-          // Default greeting
-          greeting += "어떤 일로 오셨나요?";
-        }
+        greeting = activeNPC.description;
       } else {
-        // Default if no description or personality
-        greeting += "어떤 일로 오셨나요?";
-      }
-      
-      // Add relationship information if available
-      if (activeNPC.relationships) {
-        greeting += " ";
-        
-        // Get relationships with other characters
-        const relationshipInfo = Object.entries(activeNPC.relationships)
-          .map(([relatedId, relationship]) => {
-            const relatedChar = caseData.characters.find(c => c.id === relatedId);
-            return relatedChar ? `${relatedChar.name}와(과)는 ${relationship} 관계입니다.` : '';
-          })
-          .filter(text => text) // Remove empty strings
-          .join(' ');
-          
-        if (relationshipInfo) {
-          greeting += relationshipInfo;
+        // Fallback if no description is available
+        greeting = `${activeNPC.name}`;
+        if (activeNPC.role) {
+          greeting += `(${activeNPC.role})`;
         }
-      }
-      
-      // Add alibi information if available and not in hard mode
-      if (activeNPC.alibi && difficulty !== 'hard') {
-        greeting += " " + activeNPC.alibi;
-      }
-      
-      // Add additional information based on difficulty
-      if (difficulty === 'easy') {
-        // For easy difficulty, provide more information about what the character knows
-        const groundTruth = caseData.groundTruth || {};
-        const isMurderer = activeNPC.id === groundTruth.murdererId;
-        
-        // Add a hint about what the character knows
-        const characterEvidence = (caseData.evidence || []).filter(e => e.characterId === activeNPC.id);
-        if (characterEvidence.length > 0) {
-          if (!isMurderer) {
-            greeting += " 사건에 대해 알고 있는 정보가 있습니다. 무엇이든 물어보세요.";
-          } else {
-            greeting += " 사건 당일에 있었던 일에 대해 물어보실 수 있습니다.";
-          }
-        }
+        greeting += "입니다. 어떤 일로 오셨나요?";
       }
     } else {
       // Fallback if no character is defined
@@ -1419,7 +1349,7 @@ ${connectionsText}
     if (currentView !== 'play') return null;
 
     return (
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 h-screen p-4">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 min-h-screen p-4 pb-8">
           <button
               onClick={() => setCurrentView('archive')}
               className="absolute top-5 left-5 text-gray-400 hover:text-white text-2xl z-20">
@@ -1427,7 +1357,7 @@ ${connectionsText}
           </button>
 
           {/* Left Panel: Main Interaction */}
-          <main className="w-full lg:w-3/5 flex flex-col bg-gray-800 rounded-lg shadow-xl h-1/2 lg:h-full">
+          <main className="w-full lg:w-3/5 flex flex-col bg-gray-800 rounded-lg shadow-xl min-h-[500px] lg:min-h-[700px]">
             <header className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
               {/* NPC header content */}
               {activeCaseData.characters && gameState.activeNPC && (
@@ -1569,7 +1499,7 @@ ${connectionsText}
           </main>
 
           {/* Right Panel: Case File */}
-          <aside className="w-full lg:w-2/5 flex flex-col bg-gray-800 rounded-lg shadow-xl h-1/2 lg:h-full">
+          <aside className="w-full lg:w-2/5 flex flex-col bg-gray-800 rounded-lg shadow-xl min-h-[500px] lg:min-h-[700px]">
             <header className="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <i className="fas fa-folder-open text-blue-400"></i>
@@ -1661,88 +1591,18 @@ ${connectionsText}
                           // Generate a character-specific greeting based on character information
                           let greeting = "";
                           
-                          // Get the difficulty level from case data
-                          const difficulty = activeCaseData.difficulty || 'normal';
-                          
-                          // Use the character's information to create a personalized greeting
+                          // Use the character's description directly as the greeting
                           if (selectedCharacter) {
-                            // Start with character's name and role
-                            greeting = `${selectedCharacter.name}`;
-                            if (selectedCharacter.role) {
-                              greeting += `(${selectedCharacter.role})`;
-                            }
-                            greeting += "입니다. ";
-                            
-                            // Add character description if available
+                            // If the character has a description, use it directly
                             if (selectedCharacter.description) {
-                              greeting += selectedCharacter.description;
-                            } else if (selectedCharacter.personality) {
-                              // Fallback to personality-based greeting if no description
-                              const personality = selectedCharacter.personality.toLowerCase();
-                              
-                              if (personality.includes("냉소적") || personality.includes("차가운") || personality.includes("무뚝뚝")) {
-                                greeting += "무슨 일로 찾아오셨죠?";
-                              } else if (personality.includes("친절") || personality.includes("상냥") || personality.includes("다정")) {
-                                greeting += "만나서 반갑습니다. 무엇을 도와드릴까요?";
-                              } else if (personality.includes("긴장") || personality.includes("불안") || personality.includes("소심")) {
-                                greeting += "저... 무슨 일이신가요?";
-                              } else if (personality.includes("거만") || personality.includes("오만") || personality.includes("자신감")) {
-                                greeting += "당신이 그 유명한 탐정이군요. 어떤 도움이 필요하신가요?";
-                              } else if (personality.includes("의심") || personality.includes("경계") || personality.includes("조심")) {
-                                greeting += "왜 저를 찾아오셨죠?";
-                              } else if (personality.includes("다혈질") || personality.includes("화끈") || personality.includes("직설적")) {
-                                greeting += "빨리 용건이나 말씀하세요.";
-                              } else if (personality.includes("지적") || personality.includes("논리적") || personality.includes("분석적")) {
-                                greeting += "어떤 정보가 필요하신지 말씀해주시겠어요?";
-                              } else if (personality.includes("유머") || personality.includes("쾌활") || personality.includes("명랑")) {
-                                greeting += "오늘 기분이 어떠신가요? 무엇을 도와드릴까요?";
-                              } else {
-                                // Default greeting
-                                greeting += "어떤 일로 오셨나요?";
-                              }
+                              greeting = selectedCharacter.description;
                             } else {
-                              // Default if no description or personality
-                              greeting += "어떤 일로 오셨나요?";
-                            }
-                            
-                            // Add relationship information if available
-                            if (selectedCharacter.relationships) {
-                              greeting += " ";
-                              
-                              // Get relationships with other characters
-                              const relationshipInfo = Object.entries(selectedCharacter.relationships)
-                                .map(([relatedId, relationship]) => {
-                                  const relatedChar = activeCaseData.characters.find(c => c.id === relatedId);
-                                  return relatedChar ? `${relatedChar.name}와(과)는 ${relationship} 관계입니다.` : '';
-                                })
-                                .filter(text => text) // Remove empty strings
-                                .join(' ');
-                                
-                              if (relationshipInfo) {
-                                greeting += relationshipInfo;
+                              // Fallback if no description is available
+                              greeting = `${selectedCharacter.name}`;
+                              if (selectedCharacter.role) {
+                                greeting += `(${selectedCharacter.role})`;
                               }
-                            }
-                            
-                            // Add alibi information if available and not in hard mode
-                            if (selectedCharacter.alibi && difficulty !== 'hard') {
-                              greeting += " " + selectedCharacter.alibi;
-                            }
-                            
-                            // Add additional information based on difficulty
-                            if (difficulty === 'easy') {
-                              // For easy difficulty, provide more information about what the character knows
-                              const groundTruth = activeCaseData.groundTruth || {};
-                              const isMurderer = selectedCharacter.id === groundTruth.murdererId;
-                              
-                              // Add a hint about what the character knows
-                              const characterEvidence = (activeCaseData.evidence || []).filter(e => e.characterId === selectedCharacter.id);
-                              if (characterEvidence.length > 0) {
-                                if (!isMurderer) {
-                                  greeting += " 사건에 대해 알고 있는 정보가 있습니다. 무엇이든 물어보세요.";
-                                } else {
-                                  greeting += " 사건 당일에 있었던 일에 대해 물어보실 수 있습니다.";
-                                }
-                              }
+                              greeting += "입니다. 어떤 일로 오셨나요?";
                             }
                           } else {
                             // Fallback if no character is defined
