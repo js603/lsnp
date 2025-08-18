@@ -4,6 +4,7 @@ import { doc, setDoc } from 'firebase/firestore';
 function BattlePopup({ 
     db, 
     character, 
+    calculatedStats, // GameScreen으로부터 계산된 최종 스탯을 받음
     monsterId, 
     onClose, 
     updateCharacterState, 
@@ -22,7 +23,7 @@ function BattlePopup({
     const [battleState, setBattleState] = useState('active');
     const [actionCooldown, setActionCooldown] = useState(false);
     const logEndRef = useRef(null);
-    const setupComplete = useRef(false); // React 18 StrictMode 중복 실행 방지를 위한 플래그
+    const setupComplete = useRef(false);
 
     const addBattleLog = (message) => {
         const logEntry = { id: Date.now(), message, timestamp: new Date() };
@@ -36,40 +37,28 @@ function BattlePopup({
     }, [battleLog]);
 
     useEffect(() => {
-        // StrictMode는 개발 모드에서 의도적으로 useEffect를 두 번 실행하므로,
-        // 이 플래그는 전투 설정 로직이 한 번만 실행되도록 보장합니다.
-        if (setupComplete.current) {
-            return;
-        }
+        if (setupComplete.current) return;
 
         const setupBattle = async () => {
-            try {
-                const monsterDataFromDb = allMonsters.find(m => m.id === monsterId);
-                if (!monsterDataFromDb) {
-                    addBattleLog('오류: 몬스터 정보를 찾을 수 없습니다.');
-                    setTimeout(() => onClose(), 2000);
-                    return;
-                }
-                
-                const monsterData = { ...monsterDataFromDb, currentHp: monsterDataFromDb.hp };
-                setMonster(monsterData);
-
-                const encounterPrompt = `
-                    ${player.name}(레벨 ${player.level})이(가) ${monsterData.name}을(를) 발견했습니다. 
-                    전투가 시작되는 장면을 3~5문장으로 생생하게 묘사해주세요.
-                `;
-                const encounterDescription = await callGeminiAPI(encounterPrompt);
-                addBattleLog(`[전투 시작] ${encounterDescription}`);
-
-            } catch (error) {
-                console.error("Battle setup error:", error);
-                addBattleLog("전투 준비 중 오류가 발생했습니다.");
+            const monsterDataFromDb = allMonsters.find(m => m.id === monsterId);
+            if (!monsterDataFromDb) {
+                addBattleLog('오류: 몬스터 정보를 찾을 수 없습니다.');
                 setTimeout(() => onClose(), 2000);
+                return;
             }
+            
+            const monsterData = { ...monsterDataFromDb, currentHp: monsterDataFromDb.hp };
+            setMonster(monsterData);
+
+            const encounterPrompt = `
+                ${player.name}(레벨 ${player.level})이(가) ${monsterData.name}을(를) 발견했습니다. 
+                전투가 시작되는 장면을 3~5문장으로 생생하게 묘사해주세요.
+            `;
+            const encounterDescription = await callGeminiAPI(encounterPrompt);
+            addBattleLog(`[전투 시작] ${encounterDescription}`);
         };
 
         setupBattle();
-        // 설정이 완료되었음을 표시하여 중복 실행을 방지합니다.
         setupComplete.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [monsterId]);
@@ -89,26 +78,20 @@ function BattlePopup({
 
             if (skillId) {
                 const skillUsed = allSkills.find(s => s.id === skillId);
-                if (!skillUsed) {
-                    addBattleLog("알 수 없는 스킬입니다.");
+                if (!skillUsed || (updatedPlayer.mp < skillUsed.mpCost)) {
+                    addBattleLog(skillUsed ? `MP가 부족하여 ${skillUsed.name}을(를) 사용할 수 없습니다.` : "알 수 없는 스킬입니다.");
                     setActionCooldown(false);
                     return;
                 }
 
-                if (updatedPlayer.mp < skillUsed.mpCost) {
-                    addBattleLog(`MP가 부족하여 ${skillUsed.name}을(를) 사용할 수 없습니다.`);
-                    setActionCooldown(false);
-                    return;
-                }
-
-                updatedPlayer.mp = Math.max(0, updatedPlayer.mp - skillUsed.mpCost);
+                updatedPlayer.mp -= skillUsed.mpCost;
                 
                 const baseDamage = Math.floor(Math.random() * (skillUsed.damage.max - skillUsed.damage.min + 1)) + skillUsed.damage.min;
                 let statBonus = 0;
                 if (skillUsed.damage.type === 'physical') {
-                    statBonus = Math.floor(player.stats.strength / 2);
+                    statBonus = calculatedStats.attack || 0;
                 } else {
-                    statBonus = Math.floor(player.stats.intelligence / 2);
+                    statBonus = calculatedStats.magicPower || 0;
                 }
                 playerDamage = baseDamage + statBonus;
 
@@ -117,8 +100,7 @@ function BattlePopup({
                 `;
                 actionDescription = await callGroqAPI(skillPrompt);
             } else { // Basic Attack
-                const baseAttack = Math.floor(player.stats.strength / 2) + 3;
-                playerDamage = Math.floor(Math.random() * 3) + baseAttack;
+                playerDamage = Math.floor(Math.random() * 5) + (calculatedStats.attack || 3);
                 const attackPrompt = `
                     ${player.name}(이)가 ${monster.name}에게 기본 공격으로 ${playerDamage}의 데미지를 입히는 장면을 2~3문장으로 묘사해주세요.
                 `;
@@ -134,7 +116,7 @@ function BattlePopup({
             addBattleLog(`[결과] ${monster.name}에게 ${playerDamage}의 데미지를 입혔습니다! (남은 HP: ${updatedMonster.currentHp}/${monster.hp})`);
 
             if (updatedMonster.currentHp <= 0) {
-                handleBattleVictory(updatedPlayer);
+                await handleBattleVictory(updatedPlayer);
                 return;
             }
 
@@ -152,8 +134,8 @@ function BattlePopup({
             if (battleState !== 'active') return;
 
             const monsterDamage = Math.floor(Math.random() * 3) + currentMonsterState.attack;
-            const defense = currentPlayerState.stats.defense || 0;
-            const reducedDamage = Math.max(1, monsterDamage - Math.floor(defense / 3));
+            const defense = calculatedStats.defense || 0; // 계산된 최종 방어력 사용
+            const reducedDamage = Math.max(1, monsterDamage - defense);
             const updatedPlayer = { ...currentPlayerState, hp: Math.max(0, currentPlayerState.hp - reducedDamage) };
             
             setPlayer(updatedPlayer);
@@ -167,7 +149,7 @@ function BattlePopup({
             addBattleLog(`[결과] ${currentMonsterState.name}에게 ${reducedDamage}의 데미지를 받았습니다! (남은 HP: ${updatedPlayer.hp}/${updatedPlayer.maxHp})`);
 
             if (updatedPlayer.hp <= 0) {
-                handleBattleDefeat(updatedPlayer);
+                await handleBattleDefeat(updatedPlayer);
                 return;
             }
             
@@ -183,149 +165,136 @@ function BattlePopup({
     const handleBattleVictory = async (finalPlayerState) => {
         setBattleState('victory');
         let updatedChar = { ...finalPlayerState };
-
-        try {
-            const expGained = monster.exp;
-            const goldGained = Math.floor(Math.random() * (monster.level * 10)) + monster.level * 5;
-
-            const victoryPrompt = `
-                ${player.name}이(가) ${monster.name}을(를) 쓰러뜨렸습니다! 전투 승리 장면과 ${player.name}의 기분을 3~5문장으로 생생하게 묘사해주세요.
-            `;
-            const victoryDescription = await callGeminiAPI(victoryPrompt);
-            addBattleLog(`[승리] ${victoryDescription}`);
-            addBattleLog(`[보상] 경험치 ${expGained}점과 골드 ${goldGained}개를 획득했습니다!`);
-
-            updatedChar.exp += expGained;
-            updatedChar.gold += goldGained;
-
-            let levelUpOccurred = false;
-            const classData = allClasses.find(c => c.id === updatedChar.class);
-            while (classData && updatedChar.exp >= updatedChar.expToNextLevel) {
-                levelUpOccurred = true;
-                updatedChar.level += 1;
-                updatedChar.exp -= updatedChar.expToNextLevel;
-                updatedChar.expToNextLevel = Math.floor(updatedChar.expToNextLevel * 1.5);
-                
-                updatedChar.stats.strength += classData.statGrowth.strength || 1;
-                updatedChar.stats.dexterity += classData.statGrowth.dexterity || 1;
-                updatedChar.stats.intelligence += classData.statGrowth.intelligence || 1;
-                updatedChar.stats.vitality += classData.statGrowth.vitality || 1;
-
-                updatedChar.maxHp = Math.floor(updatedChar.stats.vitality * 10);
-                updatedChar.maxMp = Math.floor(updatedChar.stats.intelligence * 5);
-                updatedChar.hp = updatedChar.maxHp;
-                updatedChar.mp = updatedChar.maxMp;
-            }
-
-            if (levelUpOccurred) {
-                const levelUpPrompt = `${updatedChar.name}이(가) 레벨 ${updatedChar.level}로 올랐습니다! 레벨업 장면을 2~3문장으로 영웅적으로 묘사해주세요.`;
-                const levelUpDescription = await callGeminiAPI(levelUpPrompt);
-                addBattleLog(`[레벨업] ${levelUpDescription}`);
-            }
-
-            if (monster.drops) {
-                for (const drop of monster.drops) {
-                    if (Math.random() <= drop.chance) {
-                        const quantity = Math.floor(Math.random() * (drop.maxQuantity - drop.minQuantity + 1)) + drop.minQuantity;
-                        if (quantity > 0) {
-                            const itemData = allItems.find(i => i.id === drop.itemId);
-                            if (itemData) {
-                                let itemAdded = false;
-                                if (itemData.stackable) {
-                                    const existingItem = updatedChar.inventory.find(i => i.id === drop.itemId);
-                                    if (existingItem) {
-                                        existingItem.quantity += quantity;
-                                        itemAdded = true;
-                                    }
-                                }
-                                if (!itemAdded) {
-                                    updatedChar.inventory.push({ ...itemData, quantity });
-                                }
-                                addBattleLog(`[획득] ${itemData.name} ${quantity}개를 획득했습니다!`);
-                            }
-                        }
-                    }
-                }
-            }
-            
-            if (updatedChar.activeQuests && updatedChar.activeQuests.length > 0) {
-                for (let i = updatedChar.activeQuests.length - 1; i >= 0; i--) {
-                    const questProgress = updatedChar.activeQuests[i];
-                    const questData = allQuests.find(q => q.id === questProgress.id);
-            
-                    if (questData?.objectives) {
-                        let questUpdated = false;
-                        if (!questProgress.objectives) {
-                            questProgress.objectives = questData.objectives.map(() => ({ current: 0 }));
-                        }
-            
-                        questData.objectives.forEach((objective, j) => {
-                            if (objective.type === 'kill' && objective.targetId === monster.id) {
-                                const currentProgress = questProgress.objectives[j]?.current || 0;
-                                if (currentProgress < objective.count) {
-                                    questProgress.objectives[j].current = currentProgress + 1;
-                                    questUpdated = true;
-                                    addBattleLog(`[퀘스트] "${questData.title}" - ${monster.name} 처치 (${questProgress.objectives[j].current}/${objective.count})`);
-                                }
-                            }
-                        });
-            
-                        if (questUpdated) {
-                            const isComplete = questData.objectives.every((obj, j) => (questProgress.objectives[j]?.current || 0) >= obj.count);
-            
-                            if (isComplete) {
-                                addMainLog(`[퀘스트 완료] "${questData.title}"의 모든 목표를 달성했습니다!`);
-                                if(questData.rewards) {
-                                    if(questData.rewards.exp) updatedChar.exp += questData.rewards.exp;
-                                    if(questData.rewards.gold) updatedChar.gold += questData.rewards.gold;
-                                    addBattleLog(`[보상] 경험치 ${questData.rewards.exp || 0}, 골드 ${questData.rewards.gold || 0} 획득!`);
-                                }
-                                updatedChar.completedQuests = [...(updatedChar.completedQuests || []), questData.id];
-                                updatedChar.activeQuests.splice(i, 1);
-                            }
-                        }
-                    }
-                }
-            }
-
-            setPlayer(updatedChar);
-            updateCharacterState(updatedChar);
-            await setDoc(doc(db, 'characters', updatedChar.id), updatedChar);
-            addMainLog(`[전투 승리] ${monster.name}을(를) 물리치고 경험치 ${expGained}, 골드 ${goldGained}를 획득했습니다.`);
-
-        } catch (error) {
-            console.error('Battle victory error:', error);
-            addBattleLog('승리 처리 중 오류가 발생했습니다.');
+    
+        const expGained = monster.exp;
+        const goldGained = Math.floor(Math.random() * (monster.level * 10)) + monster.level * 5;
+    
+        const victoryPrompt = `${player.name}이(가) ${monster.name}을(를) 쓰러뜨렸습니다! 전투 승리 장면과 ${player.name}의 기분을 3~5문장으로 생생하게 묘사해주세요.`;
+        const victoryDescription = await callGeminiAPI(victoryPrompt);
+        addBattleLog(`[승리] ${victoryDescription}`);
+        addBattleLog(`[보상] 경험치 ${expGained}점과 골드 ${goldGained}개를 획득했습니다!`);
+    
+        updatedChar.exp += expGained;
+        updatedChar.gold += goldGained;
+    
+        let levelUps = 0;
+        while (updatedChar.exp >= updatedChar.expToNextLevel) {
+            levelUps++;
+            updatedChar.level += 1;
+            updatedChar.exp -= updatedChar.expToNextLevel;
+            updatedChar.expToNextLevel = Math.floor(updatedChar.expToNextLevel * 1.5);
+            updatedChar.maxHp = Math.floor(updatedChar.stats.vitality * 10);
+            updatedChar.maxMp = Math.floor(updatedChar.stats.intelligence * 5);
+            updatedChar.hp = updatedChar.maxHp;
+            updatedChar.mp = updatedChar.maxMp;
         }
+    
+        if (levelUps > 0) {
+            const statPointsGained = levelUps * 5;
+            updatedChar.statPoints = (updatedChar.statPoints || 0) + statPointsGained;
+            const levelUpPrompt = `${updatedChar.name}이(가) 레벨 ${updatedChar.level}로 올랐습니다! 레벨업 장면을 2~3문장으로 영웅적으로 묘사해주세요.`;
+            const levelUpDescription = await callGeminiAPI(levelUpPrompt);
+            addBattleLog(`[레벨업!] ${levelUpDescription}`);
+            addMainLog(`레벨 ${updatedChar.level} 달성! 스탯 포인트 ${statPointsGained}개를 획득했습니다! '내 정보'에서 분배할 수 있습니다.`);
+        }
+    
+        const itemsAcquired = [];
+        if (monster.drops) {
+            for (const drop of monster.drops) {
+                if (Math.random() <= drop.chance) {
+                    const quantity = Math.floor(Math.random() * (drop.maxQuantity - drop.minQuantity + 1)) + drop.minQuantity;
+                    if (quantity > 0) {
+                        const itemData = allItems.find(i => i.id === drop.itemId);
+                        if (itemData) {
+                            itemsAcquired.push({ ...itemData, quantity });
+                            let itemAdded = false;
+                            if (itemData.stackable) {
+                                const existingItem = updatedChar.inventory.find(i => i.id === drop.itemId);
+                                if (existingItem) {
+                                    existingItem.quantity += quantity;
+                                    itemAdded = true;
+                                }
+                            }
+                            if (!itemAdded) {
+                                updatedChar.inventory.push({ ...itemData, quantity });
+                            }
+                            addBattleLog(`[획득] ${itemData.name} ${quantity}개를 획득했습니다!`);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (updatedChar.activeQuests?.length > 0) {
+            const questLogMessages = [];
+            for (const questProgress of updatedChar.activeQuests) {
+                if (questProgress.status === 'ready_to_complete') continue;
+
+                const questData = allQuests.find(q => q.id === questProgress.id);
+                if (!questData) continue;
+
+                let questUpdated = false;
+                questData.objectives.forEach((objective, j) => {
+                    if (objective.type === 'kill' && objective.targetId === monster.id) {
+                        const current = questProgress.objectives[j].current || 0;
+                        if (current < objective.count) {
+                            questProgress.objectives[j].current = current + 1;
+                            questUpdated = true;
+                            questLogMessages.push(`[퀘스트] "${questData.title}" - ${monster.name} 처치 (${current + 1}/${objective.count})`);
+                        }
+                    }
+                    if (objective.type === 'collect') {
+                        const itemJustAcquired = itemsAcquired.find(item => item.id === objective.targetId);
+                        if (itemJustAcquired) {
+                            const current = questProgress.objectives[j].current || 0;
+                            if (current < objective.count) {
+                                const newProgress = Math.min(objective.count, current + itemJustAcquired.quantity);
+                                questProgress.objectives[j].current = newProgress;
+                                questUpdated = true;
+                                questLogMessages.push(`[퀘스트] "${questData.title}" - ${itemJustAcquired.name} 수집 (${newProgress}/${objective.count})`);
+                            }
+                        }
+                    }
+                });
+
+                if (questUpdated) {
+                    const isComplete = questData.objectives.every((obj, j) => (questProgress.objectives[j]?.current || 0) >= obj.count);
+                    if (isComplete) {
+                        questProgress.status = 'ready_to_complete';
+                        addMainLog(`[퀘스트 목표 달성] "${questData.title}"의 모든 목표를 달성했습니다! 퀘스트를 준 NPC에게 돌아가 보상을 받으세요.`);
+                    }
+                }
+            }
+            questLogMessages.forEach(msg => addBattleLog(msg));
+        }
+
+        setPlayer(updatedChar);
+        updateCharacterState(updatedChar);
+        await setDoc(doc(db, 'characters', updatedChar.id), updatedChar);
+        addMainLog(`[전투 승리] ${monster.name}을(를) 물리치고 경험치 ${expGained}, 골드 ${goldGained}를 획득했습니다.`);
     };
 
     const handleBattleDefeat = async (finalPlayerState) => {
         setBattleState('defeat');
-        try {
-            const defeatPrompt = `
-                ${player.name}이(가) ${monster.name}에게 패배했습니다. 전투 패배 장면과 ${player.name}의 상태를 3~5문장으로 묘사해주세요.
-            `;
-            const defeatDescription = await callGeminiAPI(defeatPrompt);
-            addBattleLog(`[패배] ${defeatDescription}`);
+        const defeatPrompt = `
+            ${player.name}이(가) ${monster.name}에게 패배했습니다. 전투 패배 장면과 ${player.name}의 상태를 3~5문장으로 묘사해주세요.
+        `;
+        const defeatDescription = await callGeminiAPI(defeatPrompt);
+        addBattleLog(`[패배] ${defeatDescription}`);
 
-            const goldLoss = Math.floor(player.gold * 0.1);
-            const updatedChar = {
-                ...finalPlayerState,
-                hp: 1,
-                gold: Math.max(0, player.gold - goldLoss)
-            };
-            
-            addBattleLog(`[패널티] ${goldLoss}골드를 잃었습니다. 체력이 1로 회복되었습니다.`);
-            
-            setPlayer(updatedChar);
-            updateCharacterState(updatedChar);
-            await setDoc(doc(db, 'characters', updatedChar.id), updatedChar);
-            addMainLog(`[전투 패배] ${monster.name}에게 패배하여 ${goldLoss}골드를 잃었습니다.`);
-
-        } catch (error) {
-            console.error('Battle defeat error:', error);
-            addBattleLog('패배 처리 중 오류가 발생했습니다.');
-        }
+        const goldLoss = Math.floor(player.gold * 0.1);
+        const updatedChar = {
+            ...finalPlayerState,
+            hp: 1,
+            gold: Math.max(0, player.gold - goldLoss)
+        };
+        
+        addBattleLog(`[패널티] ${goldLoss}골드를 잃었습니다. 체력이 1로 회복되었습니다.`);
+        
+        setPlayer(updatedChar);
+        updateCharacterState(updatedChar);
+        await setDoc(doc(db, 'characters', updatedChar.id), updatedChar);
+        addMainLog(`[전투 패배] ${monster.name}에게 패배하여 ${goldLoss}골드를 잃었습니다.`);
     };
 
     const handleFlee = () => {

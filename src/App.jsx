@@ -42,6 +42,7 @@ function App() {
   const [message, setMessage] = useState('');
   const [gameLog, setGameLog] = useState([]);
 
+  // All game data state
   const [allGameData, setAllGameData] = useState({
     skills: [],
     quests: [],
@@ -49,6 +50,8 @@ function App() {
     regions: [],
     classes: [],
     monsters: [],
+    recipes: [],
+    npcs: [],
   });
 
   useEffect(() => {
@@ -59,19 +62,22 @@ function App() {
     checkAndInitializeDatabase(firestore, setLoading, setMessage, setInitialized);
   }, []);
 
+  // Load all game data once DB is initialized
   useEffect(() => {
     const loadAllGameData = async () => {
       if (!db) return;
       setLoading(true);
       setMessage('게임 기본 데이터 로딩 중...');
       try {
-        const [skillsSnap, questsSnap, itemsSnap, regionsSnap, classesSnap, monstersSnap] = await Promise.all([
+        const [skillsSnap, questsSnap, itemsSnap, regionsSnap, classesSnap, monstersSnap, recipesSnap, npcsSnap] = await Promise.all([
           getDocs(collection(db, 'skills')),
           getDocs(collection(db, 'quests')),
           getDocs(collection(db, 'items')),
           getDocs(collection(db, 'regions')),
           getDocs(collection(db, 'classes')),
           getDocs(collection(db, 'monsters')),
+          getDocs(collection(db, 'recipes')), // 레시피 데이터 로드
+          getDocs(collection(db, 'npcs')), 
         ]);
         setAllGameData({
             skills: skillsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
@@ -79,7 +85,9 @@ function App() {
             items: itemsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
             regions: regionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
             classes: classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-            monsters: monstersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+            monsters: monstersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+            recipes: recipesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })), // 레시피 상태 설정
+            npcs: npcsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })), 
         });
         setMessage('게임 데이터 로드 완료!');
       } catch (error) {
@@ -117,7 +125,7 @@ function App() {
             },
             { role: 'user', content: prompt }
           ],
-          temperature: 0.8, // 창의적인 묘사를 위해 온도 살짝 올림
+          temperature: 0.8,
           max_tokens: 1024,
         }),
       });

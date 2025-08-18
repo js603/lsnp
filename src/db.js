@@ -1,4 +1,6 @@
-import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
+const CURRENT_SCHEMA_VERSION = '1.2.0'; // version up for cooking
 
 // 데이터베이스 스키마 확인 및 초기화
 export const checkAndInitializeDatabase = async (firestore, setLoading, setMessage, setInitialized) => {
@@ -8,10 +10,10 @@ export const checkAndInitializeDatabase = async (firestore, setLoading, setMessa
 
     const schemaDoc = await getDoc(doc(firestore, 'system', 'schema'));
 
-    if (!schemaDoc.exists()) {
-      setMessage('데이터베이스 스키마 초기화 중...');
+    if (!schemaDoc.exists() || schemaDoc.data().version !== CURRENT_SCHEMA_VERSION) {
+      setMessage(schemaDoc.exists() ? '데이터베이스 스키마 업데이트 중...' : '데이터베이스 스키마 초기화 중...');
       await initializeDatabase(firestore);
-      setMessage('데이터베이스 스키마 초기화 완료!');
+      setMessage('데이터베이스 스키마 최신화 완료!');
     } else {
       setMessage('데이터베이스 스키마 확인 완료!');
     }
@@ -29,7 +31,7 @@ export const checkAndInitializeDatabase = async (firestore, setLoading, setMessa
 const initializeDatabase = async (firestore) => {
     // 1. 스키마 버전 문서 생성
     await setDoc(doc(firestore, 'system', 'schema'), {
-      version: '1.0.0',
+      version: CURRENT_SCHEMA_VERSION,
       createdAt: new Date(),
       lastUpdated: new Date()
     });
@@ -44,7 +46,7 @@ const initializeDatabase = async (firestore) => {
         connectedRegions: ['forest_of_trials', 'goblin_camp'],
         monsters: ['wild_rabbit', 'wolf_pup', 'small_slime'],
         resources: ['copper_ore', 'herb_leaf', 'small_fish'],
-        npcs: ['village_elder', 'weapon_merchant', 'quest_giver'],
+        npcs: ['village_elder', 'weapon_merchant', 'aidan_the_farmer'],
         quests: ['first_steps', 'herb_collection', 'wolf_threat']
       },
       {
@@ -54,7 +56,7 @@ const initializeDatabase = async (firestore) => {
         level: { min: 5, max: 15 },
         connectedRegions: ['starter_village', 'dark_cave'],
         monsters: ['forest_wolf', 'goblin_scout', 'poison_spider'],
-        resources: ['oak_wood', 'magic_mushroom', 'silver_ore'],
+        resources: ['oak_wood', 'magic_mushroom', 'silver_ore', 'river_fish'],
         npcs: ['forest_keeper', 'lost_traveler'],
         quests: ['mushroom_collection', 'spider_threat', 'lost_pendant']
       }
@@ -107,6 +109,52 @@ const initializeDatabase = async (firestore) => {
           { itemId: 'slime_jelly', chance: 0.9, minQuantity: 1, maxQuantity: 3 }
         ],
         description: '끈적끈적한 젤리 같은 생명체. 약하지만 귀엽게 생겼다.'
+      },
+      {
+        id: 'forest_wolf',
+        name: '숲 늑대',
+        level: 5,
+        hp: 40,
+        mp: 0,
+        attack: 8,
+        defense: 4,
+        exp: 25,
+        drops: [
+          { itemId: 'wolf_fang', chance: 0.8, minQuantity: 1, maxQuantity: 2 },
+          { itemId: 'wolf_pelt', chance: 0.6, minQuantity: 1, maxQuantity: 2 }
+        ],
+        description: '시험의 숲을 배회하는 굶주린 늑대. 무리를 지어 사냥하며, 혼자 마주치면 위험하다.'
+      },
+      {
+        id: 'goblin_scout',
+        name: '고블린 정찰병',
+        level: 6,
+        hp: 50,
+        mp: 0,
+        attack: 10,
+        defense: 5,
+        exp: 30,
+        drops: [
+          { itemId: 'goblin_ear', chance: 0.7, minQuantity: 1, maxQuantity: 1 },
+          { itemId: 'rusty_dagger', chance: 0.1, minQuantity: 1, maxQuantity: 1 },
+          { itemId: 'travelers_pendant', chance: 0.05, minQuantity: 1, maxQuantity: 1}
+        ],
+        description: '숲을 정찰하는 교활한 고블린. 동료를 부를 수 있으니 빠르게 처치해야 한다.'
+      },
+      {
+        id: 'poison_spider',
+        name: '독거미',
+        level: 8,
+        hp: 60,
+        mp: 10,
+        attack: 12,
+        defense: 6,
+        exp: 40,
+        drops: [
+          { itemId: 'spider_venom', chance: 0.8, minQuantity: 1, maxQuantity: 2 },
+          { itemId: 'spider_silk', chance: 0.5, minQuantity: 1, maxQuantity: 3 }
+        ],
+        description: '치명적인 독을 가진 거대한 거미. 물리면 중독될 수 있다.'
       }
     ];
     for (const monster of monsters) {
@@ -145,6 +193,16 @@ const initializeDatabase = async (firestore) => {
         maxStack: 20
       },
       {
+        id: 'wolf_pelt',
+        name: '늑대 가죽',
+        type: 'material',
+        subType: 'leatherworking',
+        description: '거친 늑대의 가죽. 방어구 제작에 사용된다.',
+        value: 15,
+        stackable: true,
+        maxStack: 20
+      },
+      {
         id: 'slime_jelly',
         name: '슬라임 젤리',
         type: 'material',
@@ -174,10 +232,151 @@ const initializeDatabase = async (firestore) => {
         stackable: true,
         maxStack: 10,
         effect: { type: 'heal', amount: 20 }
+      },
+      {
+        id: 'herb_leaf',
+        name: '약초 잎',
+        type: 'material',
+        subType: 'alchemy',
+        description: '치유 효과가 있는 기본적인 약초. 연금술에 사용된다.',
+        value: 3,
+        stackable: true,
+        maxStack: 50
+      },
+      {
+        id: 'magic_mushroom',
+        name: '마법 버섯',
+        type: 'material',
+        subType: 'alchemy',
+        description: '희미한 마력을 발산하는 신비한 버섯. 특별한 포션의 재료가 된다.',
+        value: 15,
+        stackable: true,
+        maxStack: 20
+      },
+      {
+        id: 'travelers_pendant',
+        name: '여행자의 펜던트',
+        type: 'quest',
+        subType: 'quest_item',
+        description: '누군가에게 매우 소중해 보이는 낡은 펜던트.',
+        value: 0,
+        stackable: false
+      },
+      {
+        id: 'antidote_potion',
+        name: '해독 물약',
+        type: 'consumable',
+        subType: 'potion',
+        description: '독 상태 이상을 해제하는 물약.',
+        value: 50,
+        stackable: true,
+        maxStack: 10,
+        effect: { type: 'cure', status: 'poison' }
+      },
+      {
+        id: 'goblin_ear',
+        name: '고블린 귀',
+        type: 'material',
+        subType: 'crafting',
+        description: '전리품으로 가치가 있는 잘린 고블린의 귀.',
+        value: 10,
+        stackable: true,
+        maxStack: 30
+      },
+      {
+        id: 'spider_venom',
+        name: '거미 독샘',
+        type: 'material',
+        subType: 'alchemy',
+        description: '강력한 독을 품고 있는 거미의 독샘. 독 관련 아이템 제작에 쓰인다.',
+        value: 25,
+        stackable: true,
+        maxStack: 20
+      },
+      {
+        id: 'spider_silk',
+        name: '거미줄',
+        type: 'material',
+        subType: 'tailoring',
+        description: '질기고 튼튼한 거미줄. 재봉에 사용된다.',
+        value: 20,
+        stackable: true,
+        maxStack: 50
+      },
+      {
+        id: 'small_fish',
+        name: '작은 물고기',
+        type: 'material',
+        subType: 'fishing',
+        description: '강가에서 흔히 볼 수 있는 작은 물고기. 요리 재료로 사용된다.',
+        value: 8,
+        stackable: true,
+        maxStack: 20
+      },
+      {
+        id: 'river_fish',
+        name: '강 물고기',
+        type: 'material',
+        subType: 'fishing',
+        description: '제법 살이 오른 강 물고기. 구워 먹으면 맛이 좋다.',
+        value: 15,
+        stackable: true,
+        maxStack: 20
+      },
+      {
+        id: 'grilled_small_fish',
+        name: '작은 생선 구이',
+        type: 'consumable',
+        subType: 'food',
+        description: '작은 물고기를 구워 만든 간단한 요리. 약간의 체력을 회복시켜 준다.',
+        value: 20,
+        stackable: true,
+        maxStack: 10,
+        effect: { type: 'heal', amount: 15 }
+      },
+      {
+        id: 'rabbit_steak',
+        name: '토끼 스테이크',
+        type: 'consumable',
+        subType: 'food',
+        description: '토끼 고기를 구워 만든 맛있는 스테이크. 꽤 많은 체력을 회복시켜 준다.',
+        value: 50,
+        stackable: true,
+        maxStack: 5,
+        effect: { type: 'heal', amount: 40 }
       }
     ];
     for (const item of items) {
       await setDoc(doc(firestore, 'items', item.id), item);
+    }
+
+    const recipes = [
+        {
+            id: 'cook_grilled_small_fish',
+            name: '작은 생선 구이',
+            type: 'cooking',
+            skillLevel: 1,
+            ingredients: [
+                { itemId: 'small_fish', quantity: 1 }
+            ],
+            result: { itemId: 'grilled_small_fish', quantity: 1 },
+            exp: 5
+        },
+        {
+            id: 'cook_rabbit_steak',
+            name: '토끼 스테이크',
+            type: 'cooking',
+            skillLevel: 5,
+            ingredients: [
+                { itemId: 'rabbit_meat', quantity: 2 },
+                { itemId: 'herb_leaf', quantity: 1 }
+            ],
+            result: { itemId: 'rabbit_steak', quantity: 1 },
+            exp: 15
+        }
+    ];
+    for (const recipe of recipes) {
+        await setDoc(doc(firestore, 'recipes', recipe.id), recipe);
     }
 
     const skills = [
@@ -324,11 +523,160 @@ const initializeDatabase = async (firestore) => {
         giver: 'village_elder',
         location: 'starter_village',
         nextQuest: null
+      },
+      {
+        id: 'herb_collection',
+        title: '약초 채집',
+        description: '농부 에이단이 약초가 부족하여 곤란을 겪고 있습니다. 시험의 숲에서 약초 잎 10개를 모아 가져다주세요.',
+        level: 2,
+        requiredLevel: 1,
+        objectives: [
+          { type: 'collect', targetId: 'herb_leaf', count: 10, current: 0 }
+        ],
+        rewards: {
+          exp: 70,
+          gold: 120,
+          items: [
+            { id: 'small_health_potion', quantity: 5 }
+          ]
+        },
+        giver: 'aidan_the_farmer',
+        location: 'starter_village',
+        nextQuest: null
+      },
+      {
+        id: 'mushroom_collection',
+        title: '신비한 버섯 채집',
+        description: '숲지기 엘라라는 숲의 정화를 위해 마력이 담긴 버섯이 필요하다고 합니다. 시험의 숲에서 마법 버섯 5개를 채집하세요.',
+        level: 6,
+        requiredLevel: 5,
+        objectives: [
+          { type: 'collect', targetId: 'magic_mushroom', count: 5, current: 0 }
+        ],
+        rewards: {
+          exp: 150,
+          gold: 250,
+          items: []
+        },
+        giver: 'forest_keeper',
+        location: 'forest_of_trials',
+        nextQuest: null
+      },
+      {
+        id: 'spider_threat',
+        title: '독거미의 위협',
+        description: '시험의 숲에 독거미들이 너무 많아져 숲의 균형이 깨지고 있습니다. 독거미 8마리를 처치하여 숲을 안정시키세요.',
+        level: 8,
+        requiredLevel: 7,
+        objectives: [
+          { type: 'kill', targetId: 'poison_spider', count: 8, current: 0 }
+        ],
+        rewards: {
+          exp: 200,
+          gold: 300,
+          items: [
+            { id: 'antidote_potion', quantity: 3 }
+          ]
+        },
+        giver: 'forest_keeper',
+        location: 'forest_of_trials',
+        nextQuest: null
+      },
+      {
+        id: 'lost_pendant',
+        title: '잃어버린 펜던트',
+        description: '길 잃은 여행자가 소중한 펜던트를 잃어버렸습니다. 숲의 고블린 정찰병들이 가져갔을지도 모릅니다. 고블린 정찰병을 처치하고 펜던트를 찾아주세요.',
+        level: 7,
+        requiredLevel: 6,
+        objectives: [
+          { type: 'collect', targetId: 'travelers_pendant', count: 1, current: 0 }
+        ],
+        rewards: {
+          exp: 180,
+          gold: 400,
+          items: []
+        },
+        giver: 'lost_traveler',
+        location: 'forest_of_trials',
+        nextQuest: null
       }
     ];
     for (const quest of quests) {
       await setDoc(doc(firestore, 'quests', quest.id), quest);
     }
+
+    const npcs = [
+        {
+          id: 'village_elder',
+          name: '마을 장로',
+          description: '시작 마을의 존경받는 장로. 모험가들에게 조언과 도움을 준다.',
+          location: 'starter_village',
+          type: 'quest_giver',
+          quests: ['first_steps', 'wolf_threat'],
+          dialogue: [
+              '마을에 온 것을 환영하네, 젊은이.',
+              '이 주변은 아직 안전하지만, 숲 깊은 곳은 조심해야 하네.',
+              '도움이 필요한가?'
+          ]
+        },
+        {
+          id: 'weapon_merchant',
+          name: '무기 상인 브록',
+          description: '다양한 무기와 방어구를 판매하는 상인. 그의 물건은 품질이 좋기로 유명하다.',
+          location: 'starter_village',
+          type: 'merchant',
+          inventory: [
+              { itemId: 'rusty_sword', stock: 5 },
+              { itemId: 'leather_armor', stock: 5 },
+              { itemId: 'small_health_potion', stock: 20 }
+          ],
+          dialogue: [
+              '쓸만한 물건이 있나 한번 둘러보라고!',
+              '최고의 장비가 최고의 모험가를 만드는 법이지.',
+              '돈만 있다면 뭐든지 구할 수 있다네.'
+          ]
+        },
+        {
+          id: 'aidan_the_farmer',
+          name: '농부 에이단',
+          description: '마을 외곽에서 작은 농장을 운영하는 농부. 최근 몬스터들 때문에 골머리를 앓고 있다.',
+          location: 'starter_village',
+          type: 'quest_giver',
+          quests: ['herb_collection'],
+          dialogue: [
+              '요즘 약초 구하기가 너무 힘들어졌어...',
+              '마을 밖은 위험하니 조심하게나.',
+          ]
+        },
+        {
+          id: 'forest_keeper',
+          name: '숲지기 엘라라',
+          description: '시험의 숲의 균형을 지키는 신비로운 숲지기. 숲을 해치는 자들을 용서하지 않는다.',
+          location: 'forest_of_trials',
+          type: 'quest_giver',
+          quests: ['mushroom_collection', 'spider_threat'],
+          dialogue: [
+              '숲이 당신을 지켜보고 있습니다.',
+              '이 숲의 생명들을 존중해주십시오.',
+              '균형을 어지럽히는 자들이 있다면, 제게 알려주십시오.'
+          ]
+        },
+        {
+          id: 'lost_traveler',
+          name: '길 잃은 여행자',
+          description: '숲에서 길을 잃고 불안에 떨고 있는 여행자. 소중한 물건을 잃어버린 것 같다.',
+          location: 'forest_of_trials',
+          type: 'quest_giver',
+          quests: ['lost_pendant'],
+          dialogue: [
+              '흐흑... 제 펜던트를 보지 못했나요?',
+              '이 숲은 너무 무서워요...',
+          ]
+        }
+      ];
+      for (const npc of npcs) {
+        await setDoc(doc(firestore, 'npcs', npc.id), npc);
+      }
 
     const equipments = [
       {
@@ -386,9 +734,23 @@ const initializeDatabase = async (firestore) => {
         requiredStats: null,
         durability: 30,
         maxDurability: 30
+      },
+      {
+        id: 'leather_gloves',
+        name: '가죽 장갑',
+        type: 'equipment',
+        subType: 'armor',
+        slot: 'hands',
+        description: '손을 보호해주는 질긴 가죽 장갑.',
+        value: 30,
+        stats: { defense: 2 },
+        requiredLevel: 2,
+        durability: 50,
+        maxDurability: 50
       }
     ];
     for (const equipment of equipments) {
+      // Note: equipments are also items, so they are saved in the 'items' collection
       await setDoc(doc(firestore, 'items', equipment.id), equipment);
     }
 };
