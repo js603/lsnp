@@ -22,7 +22,7 @@ function BattlePopup({
     const [battleState, setBattleState] = useState('active');
     const [actionCooldown, setActionCooldown] = useState(false);
     const logEndRef = useRef(null);
-    const setupComplete = useRef(false); // 전투 설정이 완료되었는지 확인하는 플래그
+    const setupComplete = useRef(false); // React 18 StrictMode 중복 실행 방지를 위한 플래그
 
     const addBattleLog = (message) => {
         const logEntry = { id: Date.now(), message, timestamp: new Date() };
@@ -36,15 +36,18 @@ function BattlePopup({
     }, [battleLog]);
 
     useEffect(() => {
-        // StrictMode에서 중복 실행을 방지하기 위해 플래그 확인
-        if (setupComplete.current) return;
+        // StrictMode는 개발 모드에서 의도적으로 useEffect를 두 번 실행하므로,
+        // 이 플래그는 전투 설정 로직이 한 번만 실행되도록 보장합니다.
+        if (setupComplete.current) {
+            return;
+        }
 
         const setupBattle = async () => {
             try {
                 const monsterDataFromDb = allMonsters.find(m => m.id === monsterId);
                 if (!monsterDataFromDb) {
                     addBattleLog('오류: 몬스터 정보를 찾을 수 없습니다.');
-                    setTimeout(handleClose, 2000);
+                    setTimeout(() => onClose(), 2000);
                     return;
                 }
                 
@@ -52,11 +55,8 @@ function BattlePopup({
                 setMonster(monsterData);
 
                 const encounterPrompt = `
-                    ${player.name}(레벨 ${player.level} ${player.class})이(가) 레벨 ${monsterData.level}의 ${monsterData.name}을(를) 발견했습니다. 
-                    ${monsterData.description}
-                    
-                    ${monsterData.name}이(가) ${player.name}을(를) 발견하고 전투 태세를 갖추는 장면을 생생하게 묘사해주세요.
-                    전투가 시작되는 순간의 긴장감과 환경을 포함해 3~5문장으로 묘사해주세요.
+                    ${player.name}(레벨 ${player.level})이(가) ${monsterData.name}을(를) 발견했습니다. 
+                    전투가 시작되는 장면을 3~5문장으로 생생하게 묘사해주세요.
                 `;
                 const encounterDescription = await callGeminiAPI(encounterPrompt);
                 addBattleLog(`[전투 시작] ${encounterDescription}`);
@@ -64,15 +64,15 @@ function BattlePopup({
             } catch (error) {
                 console.error("Battle setup error:", error);
                 addBattleLog("전투 준비 중 오류가 발생했습니다.");
-                setTimeout(handleClose, 2000);
+                setTimeout(() => onClose(), 2000);
             }
         };
 
         setupBattle();
-        // 설정이 완료되었음을 표시
+        // 설정이 완료되었음을 표시하여 중복 실행을 방지합니다.
         setupComplete.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [monsterId]); // monsterId가 변경될 때만 실행
+    }, [monsterId]);
 
     const handleClose = (result) => {
         onClose(result);
