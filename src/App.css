@@ -1,0 +1,369 @@
+/* General App Styling */
+.App {
+  text-align: center;
+  padding: 20px;
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+  min-height: 100vh;
+  font-family: 'Arial', sans-serif;
+}
+
+h1 {
+  color: #e0e0e0;
+  border-bottom: 2px solid #444;
+  padding-bottom: 10px;
+}
+
+/* Loading and Status Messages */
+.initializing, .status-message {
+  margin: 20px;
+  font-size: 1.2em;
+  color: #a0a0a0;
+}
+
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-left-color: #fff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Buttons */
+button {
+  background-color: #555;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  margin: 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover:not(:disabled) {
+  background-color: #777;
+}
+
+button:disabled {
+  background-color: #333;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Forms (Login, Character Creation) */
+.form-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #ccc;
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 8px;
+  background-color: #333;
+  border: 1px solid #555;
+  color: #f0f0f0;
+  border-radius: 4px;
+}
+
+.toggle-auth {
+  color: #aaa;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 15px;
+}
+
+/* Screen Layouts */
+.login-screen, .character-screen, .game-screen {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background-color: #282828;
+}
+
+/* Character List */
+.character-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.character-item {
+  padding: 15px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.character-item:hover {
+  background-color: #3a3a3a;
+  transform: translateY(-2px);
+}
+
+/* Game Screen Layout */
+.main-game-container {
+    display: flex;
+    gap: 20px;
+}
+
+.left-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.right-panel {
+    flex: 2;
+    background-color: #1f1f1f;
+    border-radius: 5px;
+    padding: 10px;
+    height: 60vh; /* Set a fixed height */
+    display: flex;
+    flex-direction: column;
+}
+
+.game-info {
+    background-color: #333;
+    padding: 15px;
+    border-radius: 5px;
+    text-align: left;
+}
+
+.game-actions, .travel-actions {
+    background-color: #333;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.travel-actions {
+    margin-top: 10px;
+}
+
+.game-log {
+    flex-grow: 1; /* Allow log to take remaining space */
+    overflow-y: auto; /* Enable vertical scrolling */
+    text-align: left;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 0.9em;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+.log-entry {
+    margin: 0 0 5px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #333;
+}
+
+.log-timestamp {
+    color: #888;
+    margin-right: 10px;
+}
+
+.to-char-select-btn {
+    margin-top: 20px;
+}
+
+/* --- Popup Styles --- */
+.popup-overlay {
+  position: fixed; /* Sit on top of the page content */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75); /* Black background with opacity */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Make sure it's on top */
+}
+
+.popup-container {
+  background-color: #2c2c2c;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #555;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #444;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.popup-header h3 {
+  margin: 0;
+  color: #eee;
+}
+
+.popup-close-btn {
+    background: #555;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.popup-content-split {
+    display: flex;
+    gap: 20px;
+    overflow: hidden; /* Prevent parent from growing */
+    flex: 1;
+}
+
+/* Areas within split popups */
+.inventory-list-area, .quest-list-area, .skill-list-area {
+    flex: 1;
+    border-right: 1px solid #444;
+    padding-right: 20px;
+    overflow-y: auto;
+}
+
+.inventory-details-area, .quest-details-area, .skill-details-area {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+}
+
+.item-details, .quest-details, .skill-details {
+    flex: 1;
+}
+
+.inventory-log-area, .quest-log-area {
+    flex: 1;
+    border-top: 1px solid #444;
+    margin-top: 15px;
+    padding-top: 15px;
+    overflow-y: auto;
+    font-size: 0.9em;
+}
+
+.log-entry-small {
+    margin: 0 0 4px 0;
+    font-size: 0.95em;
+}
+
+/* Battle Popup Specifics */
+.battle-popup .popup-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.battle-log-area {
+    height: 300px;
+    background-color: #1f1f1f;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.battle-ui {
+    border-top: 1px solid #444;
+    padding-top: 15px;
+}
+
+.battle-participants {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 15px;
+}
+
+.participant-info {
+    width: 45%;
+    background-color: #333;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.hp-bar, .mp-bar {
+    width: 100%;
+    background-color: #555;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 5px;
+    position: relative;
+    height: 20px;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+}
+
+.hp-bar .hp-fill {
+    background-color: #d9534f;
+    height: 100%;
+}
+
+.mp-bar .mp-fill {
+    background-color: #5bc0de;
+    height: 100%;
+}
+
+.hp-bar span, .mp-bar span {
+    position: absolute;
+    width: 100%;
+    left: 0;
+}
+
+.battle-actions {
+    text-align: center;
+}
+
+.battle-result {
+    text-align: center;
+    padding: 20px;
+}
+.battle-result.victory h4 { color: #5cb85c; }
+.battle-result.defeat h4 { color: #d9534f; }
+
+/* List styling */
+.inventory-list, .quest-list, .skill-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.inventory-list li, .quest-list li, .skill-list li {
+    padding: 10px;
+    border-bottom: 1px solid #444;
+    cursor: pointer;
+}
+
+.inventory-list li:hover, .quest-list li:hover, .skill-list li:hover {
+    background-color: #3a3a3a;
+}
+
+.inventory-list li.selected, .quest-list li.selected, .skill-list li.selected {
+    background-color: #007bff;
+    color: white;
+}
